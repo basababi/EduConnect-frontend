@@ -744,10 +744,13 @@ export const studentsApi = {
       student_code?: string;
       class_id?: number;
       date_of_birth?: string;
+      email?: string;
+      password?: string;
     }>,
   ) =>
     api.post<{
       created: number;
+      withLogin?: number;
       failed: number;
       errors: Array<{ row: number; reason: string }>;
     }>("/students/bulk", { students }),

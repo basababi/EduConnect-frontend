@@ -489,7 +489,8 @@ function ClassDetailContent({
               <Button
                 variant="ghost"
                 size="icon-sm"
-                className="text-destructive opacity-0 transition-opacity group-hover:opacity-100"
+                className="text-destructive hover:bg-destructive/10"
+                title="Сурагчийг устгах"
                 onClick={() => removeStudent(s)}
               >
                 <Trash2 className="h-3.5 w-3.5" />

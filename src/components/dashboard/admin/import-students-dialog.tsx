@@ -35,6 +35,8 @@ interface ParsedRow {
   student_code?: string;
   date_of_birth?: string;
   class_name?: string;
+  email?: string;
+  password?: string;
 }
 
 // Excel баганы нэрийг (монгол/англи) дотоод талбартай харгалзуулна
@@ -55,6 +57,13 @@ const COLUMN_MAP: Record<string, keyof ParsedRow> = {
   "төрсөн өдөр": "date_of_birth",
   dob: "date_of_birth",
   "date of birth": "date_of_birth",
+  имэйл: "email",
+  "и-мэйл": "email",
+  email: "email",
+  "нэвтрэх имэйл": "email",
+  "нууц үг": "password",
+  нууцүг: "password",
+  password: "password",
 };
 
 function normalizeDate(v: unknown): string | undefined {
@@ -86,6 +95,7 @@ export function ImportStudentsDialog({
   const [importing, setImporting] = useState(false);
   const [result, setResult] = useState<{
     created: number;
+    withLogin?: number;
     failed: number;
     errors: Array<{ row: number; reason: string }>;
   } | null>(null);
@@ -161,6 +171,8 @@ export function ImportStudentsDialog({
         student_code: r.student_code,
         date_of_birth: r.date_of_birth,
         class_id: resolveClassId(r.class_name),
+        email: r.email,
+        password: r.password,
       }));
       const res = await studentsApi.bulkCreate(payload);
       setResult(res);
@@ -175,8 +187,16 @@ export function ImportStudentsDialog({
 
   function downloadTemplate() {
     const ws = XLSX.utils.aoa_to_sheet([
-      ["Овог", "Нэр", "Сурагчийн код", "Анги", "Төрсөн огноо"],
-      ["Бат", "Болд", "STU-2025-001", classes[0]?.name ?? "10А", "2009-05-15"],
+      ["Овог", "Нэр", "Сурагчийн код", "Анги", "Төрсөн огноо", "Имэйл", "Нууц үг"],
+      [
+        "Бат",
+        "Болд",
+        "STU-2025-001",
+        classes[0]?.name ?? "10А",
+        "2009-05-15",
+        "bat.bold@school.mn",
+        "nuuts123",
+      ],
     ]);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Сурагчид");
@@ -195,7 +215,8 @@ export function ImportStudentsDialog({
         <DialogHeader>
           <DialogTitle>Сурагч Excel-ээс импортлох</DialogTitle>
           <DialogDescription>
-            Багана: Овог, Нэр, Сурагчийн код, Анги, Төрсөн огноо.
+            Багана: Овог, Нэр, Сурагчийн код, Анги, Төрсөн огноо. Нэмж{" "}
+            <b>Имэйл + Нууц үг</b> өгвөл сурагчид нэвтрэх данс үүснэ.
           </DialogDescription>
         </DialogHeader>
 
@@ -207,6 +228,11 @@ export function ImportStudentsDialog({
                 <p className="font-semibold text-green-800">
                   {result.created} сурагч амжилттай импортлогдлоо
                 </p>
+                {result.withLogin ? (
+                  <p className="text-sm text-green-700">
+                    {result.withLogin} сурагчид нэвтрэх данс үүслээ
+                  </p>
+                ) : null}
                 {result.failed > 0 && (
                   <p className="text-sm text-amber-700">
                     {result.failed} мөр алгасагдсан
@@ -295,6 +321,7 @@ export function ImportStudentsDialog({
                       <th className="p-2">Код</th>
                       <th className="p-2">Анги</th>
                       <th className="p-2">Төрсөн</th>
+                      <th className="p-2">Нэвтрэх</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -309,6 +336,13 @@ export function ImportStudentsDialog({
                             "—"}
                         </td>
                         <td className="p-2">{r.date_of_birth ?? "—"}</td>
+                        <td className="p-2">
+                          {r.email ? (
+                            <span className="text-emerald-600">{r.email}</span>
+                          ) : (
+                            "—"
+                          )}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
