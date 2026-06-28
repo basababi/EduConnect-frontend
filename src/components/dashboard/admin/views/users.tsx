@@ -33,6 +33,8 @@ import {
   Clock,
   CheckCircle2,
   Ban,
+  Trash2,
+  RotateCcw,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -75,7 +77,7 @@ const INVITE_STATUS: Record<string, { label: string; cls: string; icon: typeof C
   expired: { label: "Хугацаа дууссан", cls: "bg-red-100 text-red-700", icon: X },
 };
 
-export function AdminUsers() {
+export function AdminUsers({ currentUser }: { currentUser: User }) {
   const [users, setUsers] = useState<User[]>([]);
   const [invitations, setInvitations] = useState<Invitation[]>([]);
   const [classes, setClasses] = useState<ClassRoom[]>([]);
@@ -187,28 +189,71 @@ export function AdminUsers() {
                 />
               ) : (
                 <div className="divide-y">
-                  {filtered.map((u) => (
-                    <div
-                      key={u.id}
-                      className="flex items-center gap-4 p-4 transition-colors hover:bg-muted/50"
-                    >
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">
-                        {u.first_name[0]}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-semibold text-foreground">
-                          {u.first_name} {u.last_name}
-                        </p>
-                        <p className="truncate text-xs text-muted-foreground">{u.email}</p>
-                      </div>
-                      <Badge
-                        className={`shrink-0 text-xs ${ROLE_COLOR[u.role] ?? "bg-muted"}`}
-                        variant="secondary"
+                  {filtered.map((u) => {
+                    const inactive = u.is_active === false;
+                    const isSelf = u.id === currentUser.id;
+                    return (
+                      <div
+                        key={u.id}
+                        className={`flex items-center gap-4 p-4 transition-colors hover:bg-muted/50 ${
+                          inactive ? "opacity-60" : ""
+                        }`}
                       >
-                        {ROLE_LABEL[u.role] ?? u.role}
-                      </Badge>
-                    </div>
-                  ))}
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">
+                          {u.first_name[0]}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-semibold text-foreground">
+                            {u.first_name} {u.last_name}
+                            {isSelf && (
+                              <span className="ml-1.5 text-xs font-normal text-muted-foreground">
+                                (та)
+                              </span>
+                            )}
+                          </p>
+                          <p className="truncate text-xs text-muted-foreground">{u.email}</p>
+                        </div>
+                        {inactive && (
+                          <Badge
+                            className="shrink-0 bg-gray-100 text-xs text-gray-500"
+                            variant="secondary"
+                          >
+                            Идэвхгүй
+                          </Badge>
+                        )}
+                        <Badge
+                          className={`shrink-0 text-xs ${ROLE_COLOR[u.role] ?? "bg-muted"}`}
+                          variant="secondary"
+                        >
+                          {ROLE_LABEL[u.role] ?? u.role}
+                        </Badge>
+                        {!isSelf && (
+                          <div className="flex shrink-0 gap-1.5">
+                            {inactive ? (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="gap-1.5"
+                                onClick={() => handleReactivate(u)}
+                              >
+                                <RotateCcw className="h-3.5 w-3.5" />
+                                Сэргээх
+                              </Button>
+                            ) : (
+                              <Button
+                                variant="ghost"
+                                size="icon-sm"
+                                className="text-destructive hover:bg-destructive/10"
+                                onClick={() => handleDelete(u)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </CardContent>
@@ -307,6 +352,36 @@ export function AdminUsers() {
       );
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Цуцалж чадсангүй");
+    }
+  }
+
+  async function handleDelete(u: User) {
+    if (
+      !confirm(
+        `${u.first_name} ${u.last_name} (${u.email})-г устгах уу?\nХэрэглэгч идэвхгүй болж, нэвтрэх боломжгүй болно. Дараа нь сэргээж болно.`,
+      )
+    )
+      return;
+    try {
+      await usersApi.remove(u.id);
+      toast.success("Хэрэглэгч устгагдлаа");
+      setUsers((prev) =>
+        prev.map((x) => (x.id === u.id ? { ...x, is_active: false } : x)),
+      );
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Устгаж чадсангүй");
+    }
+  }
+
+  async function handleReactivate(u: User) {
+    try {
+      await usersApi.update(u.id, { is_active: true });
+      toast.success("Хэрэглэгч сэргээгдлээ");
+      setUsers((prev) =>
+        prev.map((x) => (x.id === u.id ? { ...x, is_active: true } : x)),
+      );
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Сэргээж чадсангүй");
     }
   }
 }

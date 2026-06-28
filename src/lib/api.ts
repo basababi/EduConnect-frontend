@@ -206,6 +206,7 @@ export interface User {
   role: "super_admin" | "admin" | "teacher" | "parent" | "student";
   school_id: number;
   phone?: string | null;
+  is_active?: boolean;
 }
 
 export interface LoginResponse {

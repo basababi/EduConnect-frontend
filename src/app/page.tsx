@@ -203,7 +203,7 @@ export default function Home() {
             <AdminOverview user={user} onNavigate={setAdminView} />
           )}
           {adminView === "schools" && <SuperAdminSchools />}
-          {adminView === "users" && <AdminUsers />}
+          {adminView === "users" && <AdminUsers currentUser={user} />}
           {adminView === "classes" && <AdminClasses />}
           {adminView === "announcements" && <AnnouncementsView />}
           {adminView === "reports" && <AdminReports />}
