@@ -693,6 +693,7 @@ export const invitationsApi = {
   accept: (token: string, dto: AcceptInvitationDto) =>
     api.post<LoginResponse>(`/invitations/token/${token}/accept`, dto),
   revoke: (id: number) => api.patch<Invitation>(`/invitations/${id}/revoke`),
+  remove: (id: number) => api.delete<void>(`/invitations/${id}`),
 };
 
 export const schoolsApi = {

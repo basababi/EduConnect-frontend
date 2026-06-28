@@ -301,7 +301,7 @@ export function AdminUsers({ currentUser }: { currentUser: User }) {
                           <StIcon className="mr-1 h-3 w-3" />
                           {st.label}
                         </Badge>
-                        {inv.status === "pending" && (
+                        {inv.status === "pending" ? (
                           <div className="flex gap-1.5">
                             {inv.token && (
                               <Button
@@ -323,6 +323,16 @@ export function AdminUsers({ currentUser }: { currentUser: User }) {
                               Цуцлах
                             </Button>
                           </div>
+                        ) : (
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                            title="Түүхээс устгах"
+                            onClick={() => handleDeleteInvite(inv.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
                         )}
                       </div>
                     );
@@ -352,6 +362,16 @@ export function AdminUsers({ currentUser }: { currentUser: User }) {
       );
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Цуцалж чадсангүй");
+    }
+  }
+
+  async function handleDeleteInvite(id: number) {
+    try {
+      await invitationsApi.remove(id);
+      toast.success("Урилга устгагдлаа");
+      setInvitations((prev) => prev.filter((i) => i.id !== id));
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Устгаж чадсангүй");
     }
   }
 
