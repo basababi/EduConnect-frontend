@@ -207,6 +207,7 @@ export interface User {
   school_id: number;
   phone?: string | null;
   is_active?: boolean;
+  school?: { id: number; name: string } | null;
 }
 
 export interface LoginResponse {

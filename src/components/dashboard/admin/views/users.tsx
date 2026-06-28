@@ -211,7 +211,14 @@ export function AdminUsers({ currentUser }: { currentUser: User }) {
                               </span>
                             )}
                           </p>
-                          <p className="truncate text-xs text-muted-foreground">{u.email}</p>
+                          <p className="truncate text-xs text-muted-foreground">
+                            {u.email}
+                            {currentUser.role === "super_admin" && u.school && (
+                              <span className="ml-1.5 text-muted-foreground/70">
+                                · {u.school.name}
+                              </span>
+                            )}
+                          </p>
                         </div>
                         {inactive && (
                           <Badge
