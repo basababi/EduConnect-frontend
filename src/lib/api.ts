@@ -289,6 +289,8 @@ export interface Grade {
   student: {
     id: number;
     student_code: string | null;
+    first_name: string | null;
+    last_name: string | null;
     user: { id: number; first_name: string; last_name: string } | null;
   } | null;
   class_id: number;

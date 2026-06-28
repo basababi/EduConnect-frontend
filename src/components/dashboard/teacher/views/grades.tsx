@@ -31,7 +31,14 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { Plus, TrendingUp } from "lucide-react";
-import { api, subjectsApi, type ClassRoom, type Grade, type Subject } from "@/lib/api";
+import {
+  api,
+  subjectsApi,
+  studentDisplayName,
+  type ClassRoom,
+  type Grade,
+  type Subject,
+} from "@/lib/api";
 import { toast } from "sonner";
 
 const GRADE_TYPES = [
@@ -98,7 +105,7 @@ export function TeacherGrades() {
     const byStudent = new Map<number, { name: string; total: number; count: number }>();
     grades.forEach((g) => {
       const key = g.student_id;
-      const name = `${g.student?.user?.first_name ?? ""} ${g.student?.user?.last_name ?? ""}`.trim();
+      const name = g.student ? studentDisplayName(g.student) : "";
       if (!byStudent.has(key)) {
         byStudent.set(key, { name, total: 0, count: 0 });
       }
@@ -357,11 +364,11 @@ export function TeacherGrades() {
                 className="flex items-center gap-3 rounded-lg border p-3"
               >
                 <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-xs font-medium text-primary">
-                  {g.student?.user?.first_name?.[0] ?? "С"}
+                  {g.student ? studentDisplayName(g.student)[0] : "С"}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium truncate">
-                    {g.student?.user?.first_name} {g.student?.user?.last_name}
+                    {g.student ? studentDisplayName(g.student) : "—"}
                   </p>
                   <p className="text-xs text-muted-foreground">
                     {g.student?.student_code} •{" "}

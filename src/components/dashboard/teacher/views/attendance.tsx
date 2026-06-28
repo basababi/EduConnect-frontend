@@ -14,7 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Search, QrCode, Save, CheckCircle2, XCircle, Clock } from "lucide-react";
-import { api, type ClassRoom, type Student } from "@/lib/api";
+import { api, studentDisplayName, type ClassRoom, type Student } from "@/lib/api";
 import { toast } from "sonner";
 
 const STATUS_CONFIG = {
@@ -60,11 +60,13 @@ export function TeacherAttendance() {
     }
   }, [selectedClass]);
 
-  const filtered = students.filter((s) =>
-    s.student_code?.toLowerCase().includes(search.toLowerCase()) ||
-    s.user?.first_name?.toLowerCase().includes(search.toLowerCase()) ||
-    s.user?.last_name?.toLowerCase().includes(search.toLowerCase()),
-  );
+  const filtered = students.filter((s) => {
+    const q = search.toLowerCase();
+    return (
+      s.student_code?.toLowerCase().includes(q) ||
+      studentDisplayName(s).toLowerCase().includes(q)
+    );
+  });
 
   const counts = {
     present: Object.values(marks).filter((s) => s === "present").length,
@@ -198,11 +200,11 @@ export function TeacherAttendance() {
                 className="flex items-center gap-3 rounded-lg border p-3 hover:bg-muted/50"
               >
                 <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-sm font-medium text-primary">
-                  {student.user?.first_name?.[0] ?? "С"}
+                  {studentDisplayName(student)[0] ?? "С"}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium truncate">
-                    {student.user?.first_name} {student.user?.last_name}
+                    {studentDisplayName(student)}
                   </p>
                   <p className="text-xs text-muted-foreground">
                     {student.student_code}
