@@ -45,12 +45,17 @@ export function Header({ onLogin }: HeaderProps) {
 
         {/* Desktop Actions */}
         <div className="hidden items-center gap-2 md:flex">
-          <Button variant="ghost" onClick={onLogin} className="text-sm font-medium">
+          <Button
+            variant="outline"
+            onClick={onLogin}
+            className="border-primary/30 text-sm font-medium text-primary hover:bg-primary hover:text-primary-foreground"
+          >
             Нэвтрэх
           </Button>
           <Button
+            variant="amber"
             onClick={onLogin}
-            className="bg-accent hover:bg-accent/90 text-accent-foreground text-sm font-medium shadow-sm"
+            className="text-sm font-medium shadow-sm"
           >
             Демо үзэх
           </Button>
@@ -82,11 +87,15 @@ export function Header({ onLogin }: HeaderProps) {
               </a>
             ))}
             <div className="mt-2 flex flex-col gap-2">
-              <Button variant="outline" onClick={() => { onLogin(); setMobileOpen(false); }}>
+              <Button
+                variant="outline"
+                className="border-primary/30 text-primary hover:bg-primary hover:text-primary-foreground"
+                onClick={() => { onLogin(); setMobileOpen(false); }}
+              >
                 Нэвтрэх
               </Button>
               <Button
-                className="bg-accent hover:bg-accent/90"
+                variant="amber"
                 onClick={() => { onLogin(); setMobileOpen(false); }}
               >
                 Демо үзэх

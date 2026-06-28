@@ -1,26 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import {
-  Users,
-  CheckCircle2,
-  FileText,
-  MessageSquare,
-  ArrowRight,
+  Users, CheckCircle2, FileText, MessageSquare, ArrowRight,
+  CalendarDays, ClipboardList,
 } from "lucide-react";
 import {
-  api,
-  type User,
-  type ClassRoom,
-  type Student,
-  type Assignment,
-  type Conversation,
-  type AttendanceSummary,
+  api, type User, type ClassRoom, type Student,
+  type Assignment, type Conversation, type AttendanceSummary,
 } from "@/lib/api";
+import { StatCard, SectionCard, EmptyState, Pill } from "@/components/ui/dashboard-ui";
 
 interface Props {
   user: User;
@@ -52,7 +41,7 @@ export function TeacherOverview({ user }: Props) {
         if (cls.length > 0) {
           const today = new Date();
           const start = new Date(today);
-          start.setDate(start.getDate() - 7);
+          start.setDate(start.getDate() - 30);
           const sum = await api.get<AttendanceSummary>(
             `/attendance/summary/${cls[0].id}?start_date=${start.toISOString().split("T")[0]}&end_date=${today.toISOString().split("T")[0]}`,
           );
@@ -69,26 +58,23 @@ export function TeacherOverview({ user }: Props) {
 
   const today = new Date();
   const dateStr = today.toLocaleDateString("mn-MN", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-    weekday: "long",
+    year: "numeric", month: "long", day: "numeric", weekday: "long",
   });
 
   if (loading) {
     return (
-      <div className="space-y-4">
-        <div className="h-24 animate-pulse rounded-xl bg-muted" />
-        <div className="grid gap-4 md:grid-cols-4">
+      <div className="space-y-6">
+        <div className="h-28 animate-pulse rounded-2xl bg-muted" />
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {[...Array(4)].map((_, i) => (
-            <div key={i} className="h-28 animate-pulse rounded-xl bg-muted" />
+            <div key={i} className="h-28 animate-pulse rounded-2xl bg-muted" />
           ))}
         </div>
+        <div className="h-64 animate-pulse rounded-2xl bg-muted" />
       </div>
     );
   }
 
-  // БОДИТ тооцоолол
   const totalStudents = students.length;
   const attendanceRate = summary?.attendance_rate ?? 0;
   const presentToday = summary?.present ?? 0;
@@ -97,259 +83,186 @@ export function TeacherOverview({ user }: Props) {
 
   const activeAssignments = assignments.filter((a) => a.status === "active").length;
   const totalAssignments = assignments.length;
+  const overdueCount = assignments.filter((a) => a.is_overdue).length;
   const unreadMessages = conversations.reduce((sum, c) => sum + c.unread_count, 0);
 
   return (
     <div className="space-y-6">
-      {/* Greeting */}
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">
-            Өдрийн мэдээ, {user.first_name} {user.last_name} 👋
+      {/* Hero greeting */}
+      <div className="relative overflow-hidden rounded-2xl bg-primary p-6 text-primary-foreground shadow-sm">
+        <div className="absolute -right-8 -top-10 size-40 rounded-full bg-amber/20 blur-2xl" />
+        <div className="relative">
+          <h1 className="text-2xl font-bold tracking-tight">
+            Өдрийн мэнд, {user.first_name} {user.last_name} 👋
           </h1>
-          <p className="text-sm text-muted-foreground">{dateStr}</p>
+          <p className="mt-1 flex items-center gap-1.5 text-sm text-primary-foreground/70">
+            <CalendarDays className="size-3.5" />
+            {dateStr}
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2 text-xs">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 font-medium ring-1 ring-white/15">
+              {classes.length} анги
+            </span>
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 font-medium ring-1 ring-white/15">
+              {totalStudents} сурагч
+            </span>
+          </div>
         </div>
       </div>
 
-      {/* 4 Stat cards — БОДИТ */}
+      {/* Stat cards */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-muted-foreground">нийт сурагч</p>
-                <p className="mt-1 text-3xl font-bold">{totalStudents}</p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  {classes.length} анги
-                </p>
-              </div>
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
-                <Users className="h-6 w-6 text-primary" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-muted-foreground">ирцтэй ирсэн</p>
-                <p className="mt-1 text-3xl font-bold">{attendanceRate}%</p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  {presentToday} ирсэн - {absentToday} тасалсан - {lateToday} хоцорсон
-                </p>
-              </div>
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-green-100">
-                <CheckCircle2 className="h-6 w-6 text-green-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-muted-foreground">идэвхтэй даалгавар</p>
-                <p className="mt-1 text-3xl font-bold">
-                  {activeAssignments}
-                  <span className="text-lg text-muted-foreground">/{totalAssignments}</span>
-                </p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  {assignments.filter((a) => a.is_overdue).length} хугацаа дууссан
-                </p>
-              </div>
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-orange-100">
-                <FileText className="h-6 w-6 text-orange-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-muted-foreground">шинэ мессеж</p>
-                <p className="mt-1 text-3xl font-bold">{unreadMessages}</p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  {conversations.length} харилцаа
-                </p>
-              </div>
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-100">
-                <MessageSquare className="h-6 w-6 text-blue-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <StatCard
+          icon={Users}
+          tone="navy"
+          label="Нийт сурагч"
+          value={totalStudents}
+          hint={`${classes.length} ангид`}
+        />
+        <StatCard
+          icon={CheckCircle2}
+          tone="emerald"
+          label="30 хоногийн ирц"
+          value={`${attendanceRate}%`}
+          hint={`${presentToday} ирсэн · ${absentToday} тасалсан · ${lateToday} хоцорсон`}
+        />
+        <StatCard
+          icon={FileText}
+          tone="amber"
+          label="Идэвхтэй даалгавар"
+          value={
+            <>
+              {activeAssignments}
+              <span className="text-base font-semibold text-muted-foreground">/{totalAssignments}</span>
+            </>
+          }
+          hint={overdueCount > 0 ? `${overdueCount} хугацаа дууссан` : "Бүгд хугацаандаа"}
+        />
+        <StatCard
+          icon={MessageSquare}
+          tone={unreadMessages > 0 ? "rose" : "default"}
+          label="Шинэ мессеж"
+          value={unreadMessages}
+          hint={`${conversations.length} харилцаа`}
+        />
       </div>
 
-      {/* Classes overview */}
-      <Card className="lg:col-span-2">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle>Миний ангиуд</CardTitle>
-            <Button variant="ghost" size="sm" className="text-xs">
-              Бүгдийг харах <ArrowRight className="ml-1 h-3 w-3" />
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            {classes.length === 0 ? (
-              <div className="py-8 text-center text-sm text-muted-foreground">
-                Анги байхгүй
-              </div>
-            ) : (
-              classes.map((c) => (
-                <div
-                  key={c.id}
-                  className="flex items-center gap-3 rounded-lg border p-3 hover:bg-muted/50"
-                >
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                    <Users className="h-5 w-5" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium">{c.name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {c.grade_level}-р анги • {c.academic_year}
-                    </p>
-                  </div>
-                  {c.teacher && (
-                    <Badge variant="outline">
-                      {c.teacher.first_name} {c.teacher.last_name}
-                    </Badge>
-                  )}
-                </div>
-              ))
-            )}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Recent assignments — БОДИТ */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-base">Сүүлийн даалгаврууд</CardTitle>
-            <Button variant="ghost" size="sm" className="text-xs">
-              Бүгдийг харах &gt;
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {assignments.length === 0 ? (
-            <div className="py-6 text-center text-sm text-muted-foreground">
-              Даалгавар алга
-            </div>
+      <div className="grid gap-6 lg:grid-cols-2">
+        {/* Classes */}
+        <SectionCard
+          icon={Users}
+          title="Миний ангиуд"
+          action={
+            <button className="inline-flex items-center gap-1 text-xs font-medium text-primary transition hover:underline">
+              Бүгдийг харах <ArrowRight className="size-3" />
+            </button>
+          }
+          bodyClassName="space-y-2"
+        >
+          {classes.length === 0 ? (
+            <EmptyState icon={Users} title="Анги байхгүй" />
           ) : (
-            assignments.slice(0, 4).map((a) => (
-              <div key={a.id} className="flex gap-3 border-b pb-3 last:border-0 last:pb-0">
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-orange-100 text-orange-600">
-                  <FileText className="h-4 w-4" />
+            classes.map((c) => (
+              <div
+                key={c.id}
+                className="flex items-center gap-3 rounded-xl border border-border p-3 transition hover:border-primary/20 hover:bg-muted/40"
+              >
+                <div className="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                  <Users className="size-5" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-center justify-between">
-                    <p className="truncate text-sm font-medium">{a.title}</p>
-                    <span className="text-xs text-muted-foreground">
-                      {a.days_until_due > 0
-                        ? `${a.days_until_due} хоног`
-                        : "Дууссан"}
-                    </span>
-                  </div>
+                  <p className="text-sm font-medium text-foreground">{c.name}</p>
                   <p className="text-xs text-muted-foreground">
-                    {a.subject} • {a.class?.name ?? "—"}
+                    {c.grade_level}-р анги · {c.academic_year}
                   </p>
                 </div>
-                {a.is_overdue ? (
-                  <Badge className="bg-red-100 text-red-700">Хугацаа дууссан</Badge>
-                ) : (
-                  <Badge className="bg-green-100 text-green-700">Идэвхтэй</Badge>
+                {c.teacher && (
+                  <Pill tone="slate">
+                    {c.teacher.first_name} {c.teacher.last_name}
+                  </Pill>
                 )}
               </div>
             ))
           )}
-        </CardContent>
-      </Card>
+        </SectionCard>
 
-      {/* Attendance chart — БОДИТ */}
-      {summary && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">
-              Ирцийн статистик — {summary.class_name}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-6 sm:grid-cols-2">
-              {/* Circle chart */}
-              <div className="flex items-center justify-center">
-                <div className="relative h-32 w-32">
-                  <svg className="h-full w-full -rotate-90" viewBox="0 0 100 100">
-                    <circle
-                      cx="50"
-                      cy="50"
-                      r="40"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="10"
-                      className="text-muted"
-                    />
-                    <circle
-                      cx="50"
-                      cy="50"
-                      r="40"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="10"
-                      strokeDasharray={`${(attendanceRate * 251.2) / 100} 251.2`}
-                      className="text-green-500 transition-all"
-                    />
-                  </svg>
-                  <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="text-2xl font-bold">{attendanceRate}%</span>
-                  </div>
+        {/* Recent assignments */}
+        <SectionCard
+          icon={ClipboardList}
+          title="Сүүлийн даалгаврууд"
+          bodyClassName="space-y-2"
+        >
+          {assignments.length === 0 ? (
+            <EmptyState icon={FileText} title="Даалгавар алга" />
+          ) : (
+            assignments.slice(0, 4).map((a) => (
+              <div
+                key={a.id}
+                className="flex items-center gap-3 rounded-xl border border-border p-3 transition hover:border-primary/20 hover:bg-muted/40"
+              >
+                <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-amber-100 text-amber-600">
+                  <FileText className="size-4" />
                 </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium text-foreground">{a.title}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {a.subject} · {a.class?.name ?? "—"}
+                  </p>
+                </div>
+                {a.is_overdue ? (
+                  <Pill tone="rose">Хугацаа дууссан</Pill>
+                ) : (
+                  <Pill tone="emerald">{a.days_until_due > 0 ? `${a.days_until_due} хоног` : "Идэвхтэй"}</Pill>
+                )}
               </div>
+            ))
+          )}
+        </SectionCard>
+      </div>
 
-              {/* Legend */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="flex items-center gap-2">
-                    <span className="h-2 w-2 rounded-full bg-green-500" />
-                    Ирсэн
-                  </span>
-                  <span className="font-medium">{presentToday}</span>
-                </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="flex items-center gap-2">
-                    <span className="h-2 w-2 rounded-full bg-red-500" />
-                    Тасалсан
-                  </span>
-                  <span className="font-medium">{absentToday}</span>
-                </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="flex items-center gap-2">
-                    <span className="h-2 w-2 rounded-full bg-orange-500" />
-                    Хоцорсон
-                  </span>
-                  <span className="font-medium">{lateToday}</span>
-                </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="flex items-center gap-2">
-                    <span className="h-2 w-2 rounded-full bg-blue-500" />
-                    Чөлөөтэй
-                  </span>
-                  <span className="font-medium">{summary.excused}</span>
-                </div>
-                <div className="mt-3 border-t pt-2 text-xs text-muted-foreground">
-                  Нийт бичлэг: {summary.total_records}
+      {/* Attendance chart */}
+      {summary && (
+        <SectionCard icon={CheckCircle2} title={`Ирцийн статистик — ${summary.class_name}`}>
+          <div className="grid gap-6 sm:grid-cols-2">
+            <div className="flex items-center justify-center">
+              <div className="relative size-36">
+                <svg className="size-full -rotate-90" viewBox="0 0 100 100">
+                  <circle cx="50" cy="50" r="40" fill="none" stroke="currentColor" strokeWidth="10" className="text-muted" />
+                  <circle
+                    cx="50" cy="50" r="40" fill="none" stroke="currentColor" strokeWidth="10"
+                    strokeLinecap="round"
+                    strokeDasharray={`${(attendanceRate * 251.2) / 100} 251.2`}
+                    className="text-emerald-500 transition-all duration-700"
+                  />
+                </svg>
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <span className="text-3xl font-bold tabular-nums text-foreground">{attendanceRate}%</span>
+                  <span className="text-[11px] text-muted-foreground">ирц</span>
                 </div>
               </div>
             </div>
-          </CardContent>
-        </Card>
+
+            <div className="space-y-2.5">
+              {[
+                { label: "Ирсэн", value: presentToday, dot: "bg-emerald-500" },
+                { label: "Тасалсан", value: absentToday, dot: "bg-rose-500" },
+                { label: "Хоцорсон", value: lateToday, dot: "bg-amber-500" },
+                { label: "Чөлөөтэй", value: summary.excused, dot: "bg-sky-500" },
+              ].map((row) => (
+                <div key={row.label} className="flex items-center justify-between rounded-lg bg-muted/40 px-3 py-2 text-sm">
+                  <span className="flex items-center gap-2 text-muted-foreground">
+                    <span className={`size-2 rounded-full ${row.dot}`} />
+                    {row.label}
+                  </span>
+                  <span className="font-semibold tabular-nums text-foreground">{row.value}</span>
+                </div>
+              ))}
+              <p className="border-t border-border pt-2 text-xs text-muted-foreground">
+                Нийт бичлэг: {summary.total_records}
+              </p>
+            </div>
+          </div>
+        </SectionCard>
       )}
     </div>
   );

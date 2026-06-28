@@ -31,10 +31,9 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { Plus, TrendingUp } from "lucide-react";
-import { api, type ClassRoom, type Grade } from "@/lib/api";
+import { api, subjectsApi, type ClassRoom, type Grade, type Subject } from "@/lib/api";
 import { toast } from "sonner";
 
-const SUBJECTS = ["Математик", "Монгол хэл", "Англи хэл", "Байгаль", "Түүх"];
 const GRADE_TYPES = [
   { value: "quiz", label: "Шалгалт" },
   { value: "homework", label: "Гэрийн даалгавар" },
@@ -47,7 +46,8 @@ const GRADE_TYPES = [
 export function TeacherGrades() {
   const [classes, setClasses] = useState<ClassRoom[]>([]);
   const [selectedClass, setSelectedClass] = useState<number | null>(null);
-  const [selectedSubject, setSelectedSubject] = useState("Математик");
+  const [allSubjects, setAllSubjects] = useState<Subject[]>([]);
+  const [selectedSubject, setSelectedSubject] = useState("");
   const [grades, setGrades] = useState<Grade[]>([]);
   const [loading, setLoading] = useState(true);
   const [addOpen, setAddOpen] = useState(false);
@@ -62,21 +62,36 @@ export function TeacherGrades() {
   });
 
   useEffect(() => {
-    api.get<ClassRoom[]>("/classes").then((cls) => {
+    Promise.all([
+      api.get<ClassRoom[]>("/classes").catch(() => [] as ClassRoom[]),
+      subjectsApi.mine().catch(() => [] as Subject[]),
+    ]).then(([cls, subs]) => {
       setClasses(cls);
+      setAllSubjects(subs);
       if (cls.length > 0) setSelectedClass(cls[0].id);
       setLoading(false);
     });
   }, []);
 
+  // Сонгосон ангид багшийн ҮҮСГЭСЭН хичээлүүд
+  const subjects = allSubjects.filter((s) => s.class_id === selectedClass);
+  // Идэвхтэй хичээл: сонгосон нь байгаа эсэх, эс бөгөөс эхнийх (effect-гүй)
+  const subject = subjects.some((s) => s.name === selectedSubject)
+    ? selectedSubject
+    : (subjects[0]?.name ?? "");
+
   useEffect(() => {
-    if (selectedClass) {
+    if (selectedClass && subject) {
       api
-        .get<Grade[]>(`/grades/class/${selectedClass}?subject=${selectedSubject}`)
+        .get<Grade[]>(
+          `/grades/class/${selectedClass}?subject=${encodeURIComponent(subject)}`,
+        )
         .then(setGrades)
         .catch(() => setGrades([]));
+    } else {
+      setGrades([]);
     }
-  }, [selectedClass, selectedSubject]);
+  }, [selectedClass, subject]);
 
   // Chart data: average per student
   const chartData = (() => {
@@ -109,7 +124,7 @@ export function TeacherGrades() {
       await api.post("/grades", {
         student_id: parseInt(newGrade.student_id),
         class_id: selectedClass,
-        subject: selectedSubject,
+        subject,
         score: parseFloat(newGrade.score),
         max_score: parseFloat(newGrade.max_score),
         grade_type: newGrade.grade_type,
@@ -119,7 +134,7 @@ export function TeacherGrades() {
       setAddOpen(false);
       setNewGrade({ student_id: "", score: "", max_score: "100", grade_type: "quiz", note: "" });
       // Reload
-      const fresh = await api.get<Grade[]>(`/grades/class/${selectedClass}?subject=${selectedSubject}`);
+      const fresh = await api.get<Grade[]>(`/grades/class/${selectedClass}?subject=${encodeURIComponent(subject)}`);
       setGrades(fresh);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Нэмж чадсангүй");
@@ -153,14 +168,18 @@ export function TeacherGrades() {
           </div>
           <div>
             <Label className="text-xs">Хичээл</Label>
-            <Select value={selectedSubject} onValueChange={setSelectedSubject}>
-              <SelectTrigger className="mt-1 w-40">
-                <SelectValue />
+            <Select
+              value={subject}
+              onValueChange={setSelectedSubject}
+              disabled={subjects.length === 0}
+            >
+              <SelectTrigger className="mt-1 w-44">
+                <SelectValue placeholder="Хичээл алга" />
               </SelectTrigger>
               <SelectContent>
-                {SUBJECTS.map((s) => (
-                  <SelectItem key={s} value={s}>
-                    {s}
+                {subjects.map((s) => (
+                  <SelectItem key={s.id} value={s.name}>
+                    {s.name}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -170,14 +189,14 @@ export function TeacherGrades() {
 
         <Dialog open={addOpen} onOpenChange={setAddOpen}>
           <DialogTrigger asChild>
-            <Button className="bg-accent hover:bg-accent/90">
+            <Button variant="amber" disabled={!subject}>
               <Plus className="mr-2 h-4 w-4" />
               Дүн нэмэх
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Шинэ дүн оруулах</DialogTitle>
+              <DialogTitle>{subject} — шинэ дүн</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleAddGrade} className="space-y-3">
               <div>
@@ -253,6 +272,23 @@ export function TeacherGrades() {
         </Dialog>
       </div>
 
+      {/* Хичээл үүсгээгүй бол чиглүүлэх */}
+      {selectedClass && subjects.length === 0 && (
+        <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4">
+          <Plus className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
+          <div>
+            <p className="text-sm font-semibold text-amber-900">
+              Энэ ангид хичээл үүсгээгүй байна
+            </p>
+            <p className="text-sm text-amber-700">
+              Дүн оруулахын тулд эхлээд зүүн цэсний{" "}
+              <strong>&quot;Миний хичээлүүд&quot;</strong>-ээс тухайн ангид хичээл
+              үүсгэнэ үү. Дараа нь энд тэр хичээлээр дүн тавина.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Stats */}
       <div className="grid gap-4 sm:grid-cols-3">
         <Card>
@@ -275,7 +311,7 @@ export function TeacherGrades() {
         <Card>
           <CardContent className="pt-6">
             <p className="text-xs text-muted-foreground">Хичээл</p>
-            <p className="text-2xl font-bold">{selectedSubject}</p>
+            <p className="text-2xl font-bold">{subject || "—"}</p>
           </CardContent>
         </Card>
       </div>
@@ -300,7 +336,7 @@ export function TeacherGrades() {
                       borderRadius: "8px",
                     }}
                   />
-                  <Bar dataKey="avg" fill="hsl(var(--chart-2))" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="avg" fill="var(--chart-2)" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>

@@ -8,24 +8,32 @@ import { Pricing } from "@/components/landing/pricing";
 import { Testimonials } from "@/components/landing/testimonials";
 import { Footer } from "@/components/landing/footer";
 import { LoginPage } from "@/components/landing/login-page";
+import { RegisterPage } from "@/components/landing/register-page";
 
 // Teacher
 import { TeacherShell, type TeacherView } from "@/components/dashboard/teacher/teacher-shell";
 import { TeacherOverview } from "@/components/dashboard/teacher/views/overview";
+import { TeacherSubjects } from "@/components/dashboard/teacher/views/subjects";
+import { TeacherStudents } from "@/components/dashboard/teacher/views/students";
+import { TeacherMaterials } from "@/components/dashboard/teacher/views/materials";
 import { TeacherAttendance } from "@/components/dashboard/teacher/views/attendance";
 import { TeacherGrades } from "@/components/dashboard/teacher/views/grades";
 import { TeacherAssignments } from "@/components/dashboard/teacher/views/assignments";
 import { TeacherMessages } from "@/components/dashboard/teacher/views/messages";
 import { TeacherSchedule } from "@/components/dashboard/teacher/views/schedule";
 import { TeacherReports } from "@/components/dashboard/teacher/views/reports";
-import { TeacherSettings } from "@/components/dashboard/teacher/views/settings";
+import { AccountSettings } from "@/components/dashboard/account-settings";
 
 // Student
 import { StudentShell, type StudentView } from "@/components/dashboard/student/student-shell";
 import { StudentOverview } from "@/components/dashboard/student/views/overview";
 import { StudentAITutor } from "@/components/dashboard/student/views/ai-tutor";
-import { StudentWellbeing } from "@/components/dashboard/student/views/wellbeing";
+import { StudentAIChat } from "@/components/dashboard/student/views/ai-chat";
 import { StudentCareer } from "@/components/dashboard/student/views/career";
+import { StudentSchedule } from "@/components/dashboard/student/views/schedule";
+import { StudentSubmissions } from "@/components/dashboard/student/views/submissions";
+import { StudentMaterials } from "@/components/dashboard/student/views/materials";
+import { StudentMessages } from "@/components/dashboard/student/views/messages";
 
 // Parent
 import { ParentShell, type ParentView } from "@/components/dashboard/parent/parent-shell";
@@ -39,9 +47,12 @@ import { AdminShell, type AdminView } from "@/components/dashboard/admin/admin-s
 import { AdminOverview } from "@/components/dashboard/admin/views/overview";
 import { AdminUsers } from "@/components/dashboard/admin/views/users";
 import { AdminClasses } from "@/components/dashboard/admin/views/classes";
+import { SuperAdminSchools } from "@/components/dashboard/admin/views/schools";
+import { AdminReports } from "@/components/dashboard/admin/views/reports";
+import { AnnouncementsView } from "@/components/dashboard/announcements-view";
 import { getStoredUser, type User } from "@/lib/api";
 
-type AppView = "landing" | "login" | "dashboard";
+type AppView = "landing" | "login" | "register" | "dashboard";
 
 export default function Home() {
   const [view, setView] = useState<AppView>("landing");
@@ -87,6 +98,18 @@ export default function Home() {
       <LoginPage
         onBack={() => setView("landing")}
         onSuccess={handleLoginSuccess}
+        onRegister={() => setView("register")}
+      />
+    );
+  }
+
+  // ── Register (сургууль өөрөө бүртгүүлэх) ──
+  if (view === "register") {
+    return (
+      <RegisterPage
+        onBack={() => setView("landing")}
+        onSuccess={handleLoginSuccess}
+        onLogin={() => setView("login")}
       />
     );
   }
@@ -103,17 +126,19 @@ export default function Home() {
           activeView={teacherView}
           onViewChange={setTeacherView}
           onLogout={handleLogout}
-          unreadMessages={4}
-          unreadNotifications={2}
         >
           {teacherView === "overview" && <TeacherOverview user={user} />}
+          {teacherView === "subjects" && <TeacherSubjects />}
+          {teacherView === "students" && <TeacherStudents />}
           {teacherView === "attendance" && <TeacherAttendance />}
           {teacherView === "grades" && <TeacherGrades />}
           {teacherView === "assignments" && <TeacherAssignments />}
+          {teacherView === "materials" && <TeacherMaterials />}
           {teacherView === "messages" && <TeacherMessages />}
           {teacherView === "schedule" && <TeacherSchedule />}
+          {teacherView === "announcements" && <AnnouncementsView />}
           {teacherView === "reports" && <TeacherReports />}
-          {teacherView === "settings" && <TeacherSettings />}
+          {teacherView === "settings" && <AccountSettings />}
         </TeacherShell>
       );
     }
@@ -131,21 +156,14 @@ export default function Home() {
           {studentView === "overview" && (
             <StudentOverview user={user} onNavigate={setStudentView} />
           )}
-          {studentView === "ai-tutor" && <StudentAITutor user={user} />}
-          {studentView === "wellbeing" && <StudentWellbeing />}
-          {studentView === "career" && <StudentCareer user={user} />}
-          {studentView === "schedule" && (
-            <div className="p-6">
-              <h1 className="text-2xl font-bold text-[#1B2B4B] mb-2">Хуваарь</h1>
-              <p className="text-gray-500 text-sm">Хичээлийн хуваарь удахгүй нэмэгдэнэ.</p>
-            </div>
-          )}
-          {studentView === "messages" && (
-            <div className="p-6">
-              <h1 className="text-2xl font-bold text-[#1B2B4B] mb-2">Мессеж</h1>
-              <p className="text-gray-500 text-sm">Багштай харилцах хэсэг удахгүй нэмэгдэнэ.</p>
-            </div>
-          )}
+          {studentView === "ai-tutor" && <StudentAITutor />}
+          {studentView === "ai-chat" && <StudentAIChat />}
+          {studentView === "career" && <StudentCareer />}
+          {studentView === "schedule" && <StudentSchedule />}
+          {studentView === "submissions" && <StudentSubmissions />}
+          {studentView === "materials" && <StudentMaterials />}
+          {studentView === "announcements" && <AnnouncementsView />}
+          {studentView === "messages" && <StudentMessages />}
         </StudentShell>
       );
     }
@@ -166,6 +184,7 @@ export default function Home() {
           {parentView === "attendance" && <ParentAttendance />}
           {parentView === "grades" && <ParentGrades />}
           {parentView === "messages" && <ParentMessages />}
+          {parentView === "announcements" && <AnnouncementsView />}
         </ParentShell>
       );
     }
@@ -183,20 +202,12 @@ export default function Home() {
           {adminView === "overview" && (
             <AdminOverview user={user} onNavigate={setAdminView} />
           )}
+          {adminView === "schools" && <SuperAdminSchools />}
           {adminView === "users" && <AdminUsers />}
           {adminView === "classes" && <AdminClasses />}
-          {adminView === "reports" && (
-            <div className="p-6">
-              <h1 className="text-2xl font-bold text-[#1B2B4B] mb-2">Тайлан</h1>
-              <p className="text-gray-500 text-sm">Тайлангийн хэсэг удахгүй нэмэгдэнэ.</p>
-            </div>
-          )}
-          {adminView === "settings" && (
-            <div className="p-6">
-              <h1 className="text-2xl font-bold text-[#1B2B4B] mb-2">Тохиргоо</h1>
-              <p className="text-gray-500 text-sm">Сургуулийн тохиргооны хэсэг удахгүй нэмэгдэнэ.</p>
-            </div>
-          )}
+          {adminView === "announcements" && <AnnouncementsView />}
+          {adminView === "reports" && <AdminReports />}
+          {adminView === "settings" && <AccountSettings />}
         </AdminShell>
       );
     }

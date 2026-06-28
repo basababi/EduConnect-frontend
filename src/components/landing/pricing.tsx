@@ -43,7 +43,7 @@ export function Pricing({ onLogin }: PricingProps) {
     <section id="pricing" className="bg-muted/30 py-20 md:py-28 border-y border-border/50">
       <div className="container mx-auto px-4">
         <div className="mx-auto max-w-2xl text-center mb-16">
-          <p className="text-sm font-medium text-accent mb-3 tracking-wide uppercase">
+          <p className="text-sm font-medium text-amber mb-3 tracking-wide uppercase">
             Үнийн санал
           </p>
           <h2 className="text-3xl font-semibold tracking-tight md:text-4xl">
@@ -59,12 +59,12 @@ export function Pricing({ onLogin }: PricingProps) {
             <Card
               key={plan.name}
               className={`relative border-border/50 transition-all hover:shadow-md ${
-                plan.popular ? "border-accent shadow-lg ring-1 ring-accent" : ""
+                plan.popular ? "border-amber shadow-lg ring-1 ring-amber" : ""
               }`}
             >
               {plan.popular && (
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                  <span className="rounded-full bg-accent px-3 py-1 text-xs font-medium text-accent-foreground shadow-sm">
+                  <span className="rounded-full bg-amber px-3 py-1 text-xs font-medium text-amber-foreground shadow-sm">
                     Алдартай
                   </span>
                 </div>
@@ -79,7 +79,7 @@ export function Pricing({ onLogin }: PricingProps) {
                 <ul className="mt-6 space-y-3 mb-6">
                   {plan.features.map((f) => (
                     <li key={f} className="flex items-start gap-2 text-sm">
-                      <Check className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
+                      <Check className="mt-0.5 h-4 w-4 shrink-0 text-amber" />
                       <span className="text-muted-foreground">{f}</span>
                     </li>
                   ))}
@@ -87,10 +87,10 @@ export function Pricing({ onLogin }: PricingProps) {
                 <Button
                   className={`w-full font-medium ${
                     plan.popular
-                      ? "bg-accent hover:bg-accent/90 text-accent-foreground"
-                      : ""
+                      ? ""
+                      : "border-primary text-primary hover:bg-primary hover:text-primary-foreground"
                   }`}
-                  variant={plan.popular ? "default" : "outline"}
+                  variant={plan.popular ? "amber" : "outline"}
                   onClick={onLogin}
                 >
                   {plan.cta}

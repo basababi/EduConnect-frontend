@@ -5,6 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
   GraduationCap,
   ArrowRight,
   Mail,
@@ -16,11 +24,12 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import { toast } from "sonner";
-import { authApi, setAuth, type User } from "@/lib/api";
+import { authApi, setAuth, GOOGLE_AUTH_URL, type User } from "@/lib/api";
 
 interface LoginPageProps {
   onBack: () => void;
   onSuccess: (user: User) => void;
+  onRegister?: () => void;
 }
 
 const DEMO_ACCOUNTS = [
@@ -38,7 +47,7 @@ const DEMO_ACCOUNTS = [
     label: "Багш",
     desc: "Ирц, дүн бүртгэх",
     icon: BookOpen,
-    color: "bg-accent",
+    color: "bg-amber",
   },
   {
     email: "parent@school.mn",
@@ -54,7 +63,7 @@ const DEMO_ACCOUNTS = [
     label: "Сурагч",
     desc: "Хуваарь, дүн харах",
     icon: GraduationCap,
-    color: "bg-accent",
+    color: "bg-amber",
   },
 ];
 
@@ -65,11 +74,12 @@ const LEFT_PANEL_FEATURES = [
   "SMS мэдэгдэл + ESIS синк",
 ];
 
-export function LoginPage({ onBack, onSuccess }: LoginPageProps) {
+export function LoginPage({ onBack, onSuccess, onRegister }: LoginPageProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [selectedRole, setSelectedRole] = useState<string | null>(null);
+  const [forgotOpen, setForgotOpen] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -110,7 +120,7 @@ export function LoginPage({ onBack, onSuccess }: LoginPageProps) {
 
         {/* Top: Logo */}
         <div className="relative flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-accent text-accent-foreground">
+          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-amber text-amber-foreground">
             <GraduationCap className="h-6 w-6" />
           </div>
           <div>
@@ -133,7 +143,7 @@ export function LoginPage({ onBack, onSuccess }: LoginPageProps) {
           <div className="space-y-3">
             {LEFT_PANEL_FEATURES.map((feature) => (
               <div key={feature} className="flex items-center gap-3">
-                <CheckCircle2 className="h-5 w-5 text-accent" />
+                <CheckCircle2 className="h-5 w-5 text-amber" />
                 <span className="text-sm text-primary-foreground/90">{feature}</span>
               </div>
             ))}
@@ -240,9 +250,13 @@ export function LoginPage({ onBack, onSuccess }: LoginPageProps) {
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label htmlFor="password">Нууц үг</Label>
-                <a href="#" className="text-xs text-accent hover:underline">
+                <button
+                  type="button"
+                  onClick={() => setForgotOpen(true)}
+                  className="text-xs text-amber hover:underline"
+                >
                   Нууц үг мартсан?
-                </a>
+                </button>
               </div>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -269,15 +283,158 @@ export function LoginPage({ onBack, onSuccess }: LoginPageProps) {
             </Button>
           </form>
 
+          {/* Google login */}
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full gap-2"
+            onClick={() => {
+              window.location.href = GOOGLE_AUTH_URL;
+            }}
+            disabled={loading}
+          >
+            <svg className="h-4 w-4" viewBox="0 0 24 24">
+              <path
+                fill="#4285F4"
+                d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1Z"
+              />
+              <path
+                fill="#34A853"
+                d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84A11 11 0 0 0 12 23Z"
+              />
+              <path
+                fill="#FBBC05"
+                d="M5.84 14.1a6.6 6.6 0 0 1 0-4.2V7.06H2.18a11 11 0 0 0 0 9.88l3.66-2.84Z"
+              />
+              <path
+                fill="#EA4335"
+                d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1A11 11 0 0 0 2.18 7.06l3.66 2.84C6.71 7.3 9.14 5.38 12 5.38Z"
+              />
+            </svg>
+            Google-ээр нэвтрэх
+          </Button>
+
           {/* Footer note */}
           <p className="text-center text-xs text-muted-foreground">
             Сургуулиараа бүртгүүлэхийг хүсвэл{" "}
-            <a href="#" className="text-accent hover:underline">
+            <button
+              type="button"
+              onClick={onRegister}
+              className="font-medium text-amber hover:underline"
+            >
               энд дарна уу
-            </a>
+            </button>
           </p>
+
+          <ForgotDialog open={forgotOpen} onOpenChange={setForgotOpen} />
         </div>
       </div>
     </div>
+  );
+}
+
+function ForgotDialog({
+  open,
+  onOpenChange,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+}) {
+  const [email, setEmail] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [sent, setSent] = useState(false);
+  const [devUrl, setDevUrl] = useState<string | null>(null);
+
+  function reset() {
+    setEmail("");
+    setSent(false);
+    setDevUrl(null);
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const res = await authApi.forgotPassword(email.trim());
+      setSent(true);
+      setDevUrl(res.dev_reset_url ?? null);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Илгээж чадсангүй");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(v) => {
+        onOpenChange(v);
+        if (!v) reset();
+      }}
+    >
+      <DialogContent className="sm:max-w-sm">
+        <DialogHeader>
+          <DialogTitle>Нууц үг сэргээх</DialogTitle>
+          <DialogDescription>
+            Бүртгэлтэй имэйлээ оруулна уу — сэргээх холбоос илгээнэ.
+          </DialogDescription>
+        </DialogHeader>
+        {sent ? (
+          <div className="space-y-4">
+            <div className="flex items-start gap-3 rounded-lg border border-green-200 bg-green-50 p-3">
+              <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-green-600" />
+              <p className="text-sm text-green-800">
+                Хэрэв энэ имэйл бүртгэлтэй бол сэргээх холбоос илгээгдсэн.
+              </p>
+            </div>
+            {devUrl && (
+              <div className="space-y-1.5">
+                <p className="text-xs text-muted-foreground">
+                  Имэйл тохиргоогүй тул (dev) шууд холбоос:
+                </p>
+                <a
+                  href={devUrl}
+                  className="block truncate rounded-lg border bg-muted/40 p-2 text-xs text-amber hover:underline"
+                >
+                  {devUrl}
+                </a>
+              </div>
+            )}
+            <Button className="w-full" onClick={() => onOpenChange(false)}>
+              Хаах
+            </Button>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="forgot-email">Имэйл хаяг</Label>
+              <Input
+                id="forgot-email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="example@school.mn"
+                required
+                disabled={loading}
+              />
+            </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+                disabled={loading}
+              >
+                Болих
+              </Button>
+              <Button type="submit" disabled={loading}>
+                {loading ? "Илгээж байна..." : "Холбоос илгээх"}
+              </Button>
+            </DialogFooter>
+          </form>
+        )}
+      </DialogContent>
+    </Dialog>
   );
 }

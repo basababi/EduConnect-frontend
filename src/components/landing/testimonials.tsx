@@ -29,7 +29,7 @@ export function Testimonials() {
     <section className="py-20 md:py-28">
       <div className="container mx-auto px-4">
         <div className="mx-auto max-w-2xl text-center mb-16">
-          <p className="text-sm font-medium text-accent mb-3 tracking-wide uppercase">
+          <p className="text-sm font-medium text-amber mb-3 tracking-wide uppercase">
             Хэрэглэгчийн сэтгэгдэл
           </p>
           <h2 className="text-3xl font-semibold tracking-tight md:text-4xl">
@@ -43,7 +43,7 @@ export function Testimonials() {
               <CardContent className="pt-6">
                 <div className="flex gap-1 mb-4">
                   {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="h-4 w-4 fill-accent text-accent" />
+                    <Star key={i} className="h-4 w-4 fill-amber text-amber" />
                   ))}
                 </div>
                 <p className="text-sm text-muted-foreground leading-relaxed mb-6">

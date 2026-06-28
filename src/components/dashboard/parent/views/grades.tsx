@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { TrendingUp, TrendingDown, Minus, FileText } from "lucide-react";
 import { api, type GradeAverage, type Grade } from "@/lib/api";
 
 interface MyChild {
@@ -65,13 +65,27 @@ export function ParentGrades() {
 
   return (
     <div className="p-6 space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-[#1B2B4B]">{studentName} — Дүн</h1>
-        {gradeAvg && (
-          <p className="text-sm text-gray-500 mt-0.5">
-            Нийт дундаж: <strong>{Math.round(gradeAvg.average_percentage)}%</strong> ·{" "}
-            {gradeAvg.total_grades} дүн
-          </p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold text-[#1B2B4B]">{studentName} — Дүн</h1>
+          {gradeAvg && (
+            <p className="text-sm text-gray-500 mt-0.5">
+              Жигнэсэн дүн:{" "}
+              <strong>{Math.round(gradeAvg.weighted_final ?? gradeAvg.average_percentage)}%</strong>{" "}
+              · {gradeAvg.total_grades} дүн
+            </p>
+          )}
+        </div>
+        {child?.student?.id && (
+          <button
+            onClick={() =>
+              window.open(`/report-card/${child.student!.id}`, "_blank")
+            }
+            className="flex items-center gap-2 rounded-lg bg-[#1B2B4B] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#1B2B4B]/90"
+          >
+            <FileText className="h-4 w-4" />
+            Дүнгийн хуудас
+          </button>
         )}
       </div>
 

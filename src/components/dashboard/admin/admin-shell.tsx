@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import {
@@ -12,15 +11,24 @@ import {
   BookOpen,
   BarChart3,
   Settings,
-  Bell,
   Menu,
   LogOut,
   Wifi,
   Shield,
+  Building2,
+  Megaphone,
 } from "lucide-react";
 import { authApi, type User } from "@/lib/api";
+import { NotificationBell } from "@/components/dashboard/notification-bell";
 
-export type AdminView = "overview" | "users" | "classes" | "reports" | "settings";
+export type AdminView =
+  | "overview"
+  | "schools"
+  | "users"
+  | "classes"
+  | "announcements"
+  | "reports"
+  | "settings";
 
 interface NavItem {
   id: AdminView;
@@ -28,10 +36,20 @@ interface NavItem {
   icon: typeof Home;
 }
 
-const NAV_ITEMS: NavItem[] = [
+const ADMIN_NAV: NavItem[] = [
   { id: "overview", label: "Нүүр", icon: Home },
   { id: "users", label: "Хэрэглэгчид", icon: Users },
   { id: "classes", label: "Ангиуд", icon: BookOpen },
+  { id: "announcements", label: "Зарлал", icon: Megaphone },
+  { id: "reports", label: "Тайлан", icon: BarChart3 },
+  { id: "settings", label: "Тохиргоо", icon: Settings },
+];
+
+const SUPER_ADMIN_NAV: NavItem[] = [
+  { id: "overview", label: "Нүүр", icon: Home },
+  { id: "schools", label: "Сургуулиуд", icon: Building2 },
+  { id: "users", label: "Хэрэглэгчид", icon: Users },
+  { id: "announcements", label: "Зарлал", icon: Megaphone },
   { id: "reports", label: "Тайлан", icon: BarChart3 },
   { id: "settings", label: "Тохиргоо", icon: Settings },
 ];
@@ -54,13 +72,14 @@ export function AdminShell({
   unreadNotifications = 0,
 }: AdminShellProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const navItems = user.role === "super_admin" ? SUPER_ADMIN_NAV : ADMIN_NAV;
 
   async function handleLogout() {
     await authApi.logout();
     onLogout();
   }
 
-  const SidebarContent = () => (
+  const sidebar = (
     <div className="flex h-full flex-col bg-[#1B2B4B] text-white">
       <div className="border-b border-white/10 p-4">
         <div className="flex items-center gap-2 mb-4">
@@ -94,7 +113,7 @@ export function AdminShell({
       </div>
 
       <nav className="flex-1 space-y-0.5 overflow-y-auto p-3">
-        {NAV_ITEMS.map((item) => {
+        {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = activeView === item.id;
           return (
@@ -129,17 +148,15 @@ export function AdminShell({
     </div>
   );
 
-  const pageLabel = NAV_ITEMS.find((n) => n.id === activeView)?.label ?? "Нүүр";
+  const pageLabel = navItems.find((n) => n.id === activeView)?.label ?? "Нүүр";
 
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50">
-      <aside className="hidden w-64 shrink-0 md:block">
-        <SidebarContent />
-      </aside>
+      <aside className="hidden w-64 shrink-0 md:block">{sidebar}</aside>
 
       <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
         <SheetContent side="left" className="w-64 p-0">
-          <SidebarContent />
+          {sidebar}
         </SheetContent>
       </Sheet>
 
@@ -162,14 +179,7 @@ export function AdminShell({
               <Wifi className="h-3 w-3" />
               Онлайн
             </div>
-            <Button variant="ghost" size="icon" className="relative">
-              <Bell className="h-5 w-5" />
-              {unreadNotifications > 0 && (
-                <span className="absolute right-1.5 top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
-                  {unreadNotifications}
-                </span>
-              )}
-            </Button>
+            <NotificationBell />
             <Avatar className="h-9 w-9 border-2 border-[#1B2B4B]">
               <AvatarFallback className="bg-[#1B2B4B] text-white text-sm">
                 {user.first_name[0]}

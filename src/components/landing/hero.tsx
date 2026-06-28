@@ -15,7 +15,7 @@ export function Hero({ onLogin }: HeroProps) {
         <div className="mx-auto max-w-3xl text-center">
           {/* Badge */}
           <div className="inline-flex items-center gap-2 rounded-full border border-border bg-muted/50 px-3 py-1 text-xs font-medium text-muted-foreground">
-            <Sparkles className="h-3 w-3 text-accent" />
+            <Sparkles className="h-3 w-3 text-amber" />
             Монголын сургуулиудад зориулсан нэгдсэн платформ
           </div>
 
@@ -34,8 +34,9 @@ export function Hero({ onLogin }: HeroProps) {
           <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Button
               size="lg"
+              variant="amber"
               onClick={onLogin}
-              className="bg-accent hover:bg-accent/90 text-accent-foreground font-medium shadow-sm"
+              className="font-medium shadow-sm"
             >
               Демо үзэх
               <ArrowRight className="ml-2 h-4 w-4" />
@@ -44,7 +45,7 @@ export function Hero({ onLogin }: HeroProps) {
               size="lg"
               variant="outline"
               onClick={onLogin}
-              className="border-border font-medium"
+              className="border-primary font-medium text-primary hover:bg-primary hover:text-primary-foreground"
             >
               Нэвтрэх
             </Button>
@@ -84,7 +85,7 @@ export function Hero({ onLogin }: HeroProps) {
                   <div className="h-3 w-3 rounded-full bg-green-400/80" />
                 </div>
                 <div className="mx-auto flex items-center gap-2 rounded-md bg-background px-3 py-1 text-xs text-muted-foreground">
-                  <div className="h-2 w-2 rounded-full bg-accent" />
+                  <div className="h-2 w-2 rounded-full bg-amber" />
                   educonnect.mn/dashboard
                 </div>
               </div>
@@ -96,7 +97,7 @@ export function Hero({ onLogin }: HeroProps) {
                       <p className="text-xs text-muted-foreground">Өнөөдрийн ирц</p>
                       <p className="mt-1 text-2xl font-semibold">94%</p>
                       <div className="mt-2 h-1.5 w-full rounded-full bg-muted">
-                        <div className="h-full w-[94%] rounded-full bg-accent" />
+                        <div className="h-full w-[94%] rounded-full bg-amber" />
                       </div>
                     </div>
                     <div className="rounded-lg border border-border/50 bg-card p-4">
@@ -130,7 +131,7 @@ export function Hero({ onLogin }: HeroProps) {
                     <div className="space-y-2">
                       {["Ирц бүртгэгдлээ", "Шинэ дүн орлоо", "Даалгавар нэмэгдлээ"].map((t) => (
                         <div key={t} className="flex items-center gap-2 text-xs">
-                          <div className="h-1.5 w-1.5 rounded-full bg-accent" />
+                          <div className="h-1.5 w-1.5 rounded-full bg-amber" />
                           {t}
                         </div>
                       ))}

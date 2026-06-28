@@ -1,219 +1,276 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
-import { Send, Loader2, MessageSquare } from "lucide-react";
-import { api, type Conversation, type Message } from "@/lib/api";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { Send, MessageSquare, Plus, BookOpen } from "lucide-react";
+import {
+  messagesApi,
+  classesApi,
+  getStoredUser,
+  type Conversation,
+  type Message,
+} from "@/lib/api";
+import { toast } from "sonner";
+
+interface TeacherOption {
+  id: number;
+  first_name: string;
+  last_name: string;
+  className?: string;
+}
 
 export function ParentMessages() {
+  const me = getStoredUser();
   const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [activeConvId, setActiveConvId] = useState<number | null>(null);
+  const [teachers, setTeachers] = useState<TeacherOption[]>([]);
+  const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
+  const [selectedName, setSelectedName] = useState<string>("");
   const [messages, setMessages] = useState<Message[]>([]);
-  const [input, setInput] = useState("");
-  const [sending, setSending] = useState(false);
+  const [newMsg, setNewMsg] = useState("");
   const [loading, setLoading] = useState(true);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [sending, setSending] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    api
-      .get<Conversation[]>("/messages/conversations")
-      .then((data) => {
-        setConversations(data);
-        if (data.length > 0) setActiveConvId(data[0].user.id);
+    Promise.all([
+      messagesApi.conversations().catch(() => [] as Conversation[]),
+      classesApi.list().catch(() => []),
+    ])
+      .then(([convs, classes]) => {
+        setConversations(convs);
+        if (convs.length > 0) {
+          setSelectedUserId(convs[0].user.id);
+          setSelectedName(`${convs[0].user.first_name} ${convs[0].user.last_name}`);
+        }
+        const map = new Map<number, TeacherOption>();
+        for (const c of classes) {
+          if (c.teacher) {
+            map.set(c.teacher.id, {
+              id: c.teacher.id,
+              first_name: c.teacher.first_name,
+              last_name: c.teacher.last_name,
+              className: c.name,
+            });
+          }
+        }
+        setTeachers([...map.values()]);
       })
-      .catch(() => null)
       .finally(() => setLoading(false));
   }, []);
 
   useEffect(() => {
-    if (activeConvId === null) return;
-    api
-      .get<Message[]>(`/messages/conversation/${activeConvId}`)
-      .then(setMessages)
-      .catch(() => null);
-  }, [activeConvId]);
+    if (selectedUserId) {
+      messagesApi
+        .conversation(selectedUserId)
+        .then(setMessages)
+        .catch(() => setMessages([]));
+    }
+  }, [selectedUserId]);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [messages]);
 
-  async function handleSend() {
-    const text = input.trim();
-    if (!text || sending || activeConvId === null) return;
+  function openChat(userId: number, name: string) {
+    setSelectedUserId(userId);
+    setSelectedName(name);
+  }
+
+  async function handleSend(e: React.FormEvent) {
+    e.preventDefault();
+    if (!newMsg.trim() || !selectedUserId) return;
     setSending(true);
     try {
-      const msg = await api.post<Message>("/messages", {
-        receiver_id: activeConvId,
-        content: text,
-      });
+      const msg = await messagesApi.send({ receiver_id: selectedUserId, content: newMsg });
       setMessages((prev) => [...prev, msg]);
-      setInput("");
-    } catch {
-      // noop
+      setNewMsg("");
+      messagesApi.conversations().then(setConversations).catch(() => {});
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Илгээж чадсангүй");
     } finally {
       setSending(false);
     }
   }
 
-  function handleKeyDown(e: React.KeyboardEvent) {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
-    }
-  }
-
-  const activeConv = conversations.find((c) => c.user.id === activeConvId);
-
-  if (loading) {
-    return (
-      <div className="p-6">
-        <div className="h-96 animate-pulse rounded-xl bg-gray-200" />
-      </div>
-    );
-  }
+  if (loading) return <div className="m-6 h-[70vh] animate-pulse rounded-xl bg-muted" />;
 
   return (
-    <div className="p-6 h-full flex flex-col">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-[#1B2B4B]">Мессеж</h1>
-        <p className="text-sm text-gray-500 mt-0.5">Багш нартай харилцах</p>
+    <div className="p-6">
+      <div className="mb-4 flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-primary">Мессеж</h1>
+          <p className="text-sm text-muted-foreground">Багш нартай харилцах</p>
+        </div>
+        <Button variant="amber" className="gap-2" onClick={() => setPickerOpen(true)}>
+          <Plus className="h-4 w-4" />
+          Шинэ харилцаа
+        </Button>
       </div>
 
-      {conversations.length === 0 ? (
-        <Card className="border-dashed flex-1">
-          <CardContent className="flex flex-col items-center justify-center h-full py-12 gap-3">
-            <MessageSquare className="h-10 w-10 text-gray-300" />
-            <p className="text-sm text-gray-400">Харилцаа байхгүй байна</p>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="flex gap-4 flex-1 min-h-0">
-          {/* Conversation list */}
-          <div className="w-64 shrink-0 space-y-1">
-            {conversations.map((c) => (
-              <button
-                key={c.user.id}
-                onClick={() => setActiveConvId(c.user.id)}
-                className={`w-full text-left rounded-xl p-3 transition-colors ${
-                  activeConvId === c.user.id
-                    ? "bg-[#1B2B4B] text-white"
-                    : "hover:bg-gray-100"
-                }`}
-              >
-                <div className="flex items-center gap-2">
-                  <Avatar className="h-8 w-8 shrink-0">
-                    <AvatarFallback
-                      className={`text-xs font-bold ${
-                        activeConvId === c.user.id
-                          ? "bg-[#F5A623] text-[#1B2B4B]"
-                          : "bg-[#1B2B4B] text-white"
-                      }`}
-                    >
-                      {c.user.first_name[0]}
+      <Card className="h-[calc(100vh-14rem)] overflow-hidden">
+        <div className="flex h-full">
+          {/* Conversations */}
+          <div className="flex w-64 flex-col border-r">
+            <ScrollArea className="flex-1">
+              <div className="space-y-1 p-2">
+                {conversations.map((c) => (
+                  <button
+                    key={c.user.id}
+                    onClick={() => openChat(c.user.id, `${c.user.first_name} ${c.user.last_name}`)}
+                    className={`flex w-full items-center gap-3 rounded-lg p-2 text-left transition-colors ${
+                      selectedUserId === c.user.id ? "bg-primary/10" : "hover:bg-muted"
+                    }`}
+                  >
+                    <Avatar className="h-9 w-9">
+                      <AvatarFallback className="bg-primary/10 text-xs text-primary">
+                        {c.user.first_name[0]}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between">
+                        <p className="truncate text-sm font-medium">
+                          {c.user.first_name} {c.user.last_name}
+                        </p>
+                        {c.unread_count > 0 && (
+                          <span className="ml-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
+                            {c.unread_count}
+                          </span>
+                        )}
+                      </div>
+                      <p className="truncate text-xs text-muted-foreground">
+                        {c.last_message.content}
+                      </p>
+                    </div>
+                  </button>
+                ))}
+                {conversations.length === 0 && (
+                  <div className="py-12 text-center text-xs text-muted-foreground">
+                    Харилцаа алга. &quot;Шинэ харилцаа&quot; дарж багштай холбогдоорой.
+                  </div>
+                )}
+              </div>
+            </ScrollArea>
+          </div>
+
+          {/* Chat */}
+          <div className="flex flex-1 flex-col">
+            {selectedUserId ? (
+              <>
+                <div className="flex items-center gap-3 border-b p-3">
+                  <Avatar className="h-9 w-9">
+                    <AvatarFallback className="bg-primary/10 text-xs text-primary">
+                      {selectedName[0]}
+                    </AvatarFallback>
+                  </Avatar>
+                  <p className="text-sm font-medium">{selectedName}</p>
+                </div>
+
+                <div ref={scrollRef} className="flex-1 space-y-3 overflow-y-auto bg-muted/20 p-4">
+                  {messages.map((m) => {
+                    const isMe = m.sender_id === me?.id;
+                    return (
+                      <div key={m.id} className={`flex ${isMe ? "justify-end" : "justify-start"}`}>
+                        <div
+                          className={`max-w-[70%] rounded-2xl px-4 py-2 ${
+                            isMe ? "bg-primary text-primary-foreground" : "border bg-background"
+                          }`}
+                        >
+                          <p className="text-sm">{m.content}</p>
+                          <p
+                            className={`mt-1 text-[10px] ${isMe ? "text-primary-foreground/70" : "text-muted-foreground"}`}
+                          >
+                            {new Date(m.created_at).toLocaleTimeString("mn-MN", {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {messages.length === 0 && (
+                    <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+                      Мессеж бичиж эхлээрэй
+                    </div>
+                  )}
+                </div>
+
+                <form onSubmit={handleSend} className="flex gap-2 border-t p-3">
+                  <Input
+                    value={newMsg}
+                    onChange={(e) => setNewMsg(e.target.value)}
+                    placeholder="Мессеж бичих..."
+                    disabled={sending}
+                  />
+                  <Button type="submit" size="icon" disabled={sending || !newMsg.trim()}>
+                    <Send className="h-4 w-4" />
+                  </Button>
+                </form>
+              </>
+            ) : (
+              <div className="flex flex-1 flex-col items-center justify-center text-muted-foreground">
+                <MessageSquare className="mb-3 h-12 w-12 opacity-50" />
+                <p className="text-sm">Харилцаа сонгоно уу</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </Card>
+
+      {/* Teacher picker */}
+      <Dialog open={pickerOpen} onOpenChange={setPickerOpen}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Багш сонгох</DialogTitle>
+            <DialogDescription>Холбогдох багшаа сонгоно уу.</DialogDescription>
+          </DialogHeader>
+          <div className="max-h-80 space-y-1.5 overflow-y-auto">
+            {teachers.length === 0 ? (
+              <p className="py-6 text-center text-sm text-muted-foreground">Багш олдсонгүй</p>
+            ) : (
+              teachers.map((t) => (
+                <button
+                  key={t.id}
+                  onClick={() => {
+                    openChat(t.id, `${t.first_name} ${t.last_name}`);
+                    setPickerOpen(false);
+                  }}
+                  className="flex w-full items-center gap-3 rounded-lg border p-2.5 text-left transition-colors hover:bg-muted"
+                >
+                  <Avatar className="h-9 w-9">
+                    <AvatarFallback className="bg-primary/10 text-xs text-primary">
+                      {t.first_name[0]}
                     </AvatarFallback>
                   </Avatar>
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-center justify-between">
-                      <p
-                        className={`text-sm font-medium truncate ${
-                          activeConvId === c.user.id ? "text-white" : "text-[#1B2B4B]"
-                        }`}
-                      >
-                        {c.user.first_name} {c.user.last_name}
-                      </p>
-                      {c.unread_count > 0 && (
-                        <Badge className="bg-red-500 text-white text-[10px] h-4 px-1 ml-1 shrink-0">
-                          {c.unread_count}
-                        </Badge>
-                      )}
-                    </div>
-                    <p
-                      className={`text-xs truncate mt-0.5 ${
-                        activeConvId === c.user.id ? "text-white/60" : "text-gray-400"
-                      }`}
-                    >
-                      {c.user.role === "teacher" ? "Багш" : c.user.role}
+                    <p className="truncate text-sm font-medium">
+                      {t.first_name} {t.last_name}
                     </p>
-                  </div>
-                </div>
-              </button>
-            ))}
-          </div>
-
-          {/* Chat area */}
-          <Card className="flex-1 flex flex-col overflow-hidden">
-            {activeConv && (
-              <div className="border-b px-4 py-3 flex items-center gap-3 shrink-0">
-                <Avatar className="h-9 w-9">
-                  <AvatarFallback className="bg-[#1B2B4B] text-white text-sm">
-                    {activeConv.user.first_name[0]}
-                  </AvatarFallback>
-                </Avatar>
-                <div>
-                  <p className="text-sm font-semibold text-[#1B2B4B]">
-                    {activeConv.user.first_name} {activeConv.user.last_name}
-                  </p>
-                  <p className="text-xs text-gray-400">
-                    {activeConv.user.role === "teacher" ? "Багш" : activeConv.user.role}
-                  </p>
-                </div>
-              </div>
-            )}
-
-            <CardContent className="flex-1 overflow-y-auto p-4 space-y-3">
-              {messages.map((msg) => {
-                const isMine = msg.sender_id !== activeConvId;
-                return (
-                  <div
-                    key={msg.id}
-                    className={`flex gap-2 ${isMine ? "justify-end" : "justify-start"}`}
-                  >
-                    <div
-                      className={`max-w-[75%] px-4 py-2.5 rounded-2xl text-sm whitespace-pre-wrap ${
-                        isMine
-                          ? "bg-[#1B2B4B] text-white rounded-tr-sm"
-                          : "bg-gray-100 text-gray-800 rounded-tl-sm"
-                      }`}
-                    >
-                      {msg.content}
-                      <p className={`text-[10px] mt-1 ${isMine ? "text-white/50" : "text-gray-400"}`}>
-                        {new Date(msg.created_at).toLocaleTimeString("mn-MN", {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
+                    {t.className && (
+                      <p className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <BookOpen className="h-3 w-3" />
+                        {t.className}
                       </p>
-                    </div>
+                    )}
                   </div>
-                );
-              })}
-              <div ref={messagesEndRef} />
-            </CardContent>
-
-            <div className="border-t p-3 flex gap-2 shrink-0">
-              <Textarea
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder="Мессеж бичих..."
-                className="resize-none min-h-[40px] max-h-24 text-sm"
-                rows={1}
-                disabled={sending}
-              />
-              <Button
-                onClick={handleSend}
-                disabled={sending || !input.trim()}
-                className="bg-[#1B2B4B] hover:bg-[#243d6b] text-white px-3 self-end"
-              >
-                {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-              </Button>
-            </div>
-          </Card>
-        </div>
-      )}
+                </button>
+              ))
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

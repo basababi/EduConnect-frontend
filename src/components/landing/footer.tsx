@@ -46,15 +46,15 @@ export function Footer() {
             <h3 className="font-semibold text-foreground mb-3">Холбоо</h3>
             <ul className="space-y-3 text-sm">
               <li className="flex items-center gap-2 text-muted-foreground">
-                <Phone className="h-4 w-4 text-accent" />
+                <Phone className="h-4 w-4 text-amber" />
                 +976 11-123456
               </li>
               <li className="flex items-center gap-2 text-muted-foreground">
-                <Mail className="h-4 w-4 text-accent" />
+                <Mail className="h-4 w-4 text-amber" />
                 info@educonnect.mn
               </li>
               <li className="flex items-center gap-2 text-muted-foreground">
-                <MapPin className="h-4 w-4 text-accent" />
+                <MapPin className="h-4 w-4 text-amber" />
                 Улаанбаатар, Монгол
               </li>
             </ul>

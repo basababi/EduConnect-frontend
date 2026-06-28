@@ -35,7 +35,7 @@ export function Features() {
     <section id="features" className="py-20 md:py-28">
       <div className="container mx-auto px-4">
         <div className="mx-auto max-w-2xl text-center mb-16">
-          <p className="text-sm font-medium text-accent mb-3 tracking-wide uppercase">
+          <p className="text-sm font-medium text-amber mb-3 tracking-wide uppercase">
             Бүх талуудын хэрэгцээ
           </p>
           <h2 className="text-3xl font-semibold tracking-tight md:text-4xl">
@@ -53,7 +53,7 @@ export function Features() {
               className="border-border/50 transition-all hover:border-border hover:shadow-md"
             >
               <CardContent className="pt-6">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent/10 text-accent mb-4">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber/10 text-amber mb-4">
                   <feature.icon className="h-5 w-5" />
                 </div>
                 <h3 className="font-semibold text-foreground">{feature.title}</h3>
@@ -61,7 +61,7 @@ export function Features() {
                 <ul className="mt-4 space-y-2">
                   {feature.points.map((point) => (
                     <li key={point} className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <span className="h-1 w-1 rounded-full bg-accent" />
+                      <span className="h-1 w-1 rounded-full bg-amber" />
                       {point}
                     </li>
                   ))}

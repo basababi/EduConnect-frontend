@@ -20,9 +20,25 @@ export async function POST(req: NextRequest) {
   })
 
   if (!response.ok) {
+    const detail = await response.text().catch(() => '')
+    let message = 'AI түр боломжгүй байна. Дахин оролдоно уу.'
+    try {
+      const parsed = JSON.parse(detail)
+      const m: string = parsed?.error?.message ?? ''
+      if (/credit balance is too low/i.test(m)) {
+        message = 'Anthropic дансны кредит дууссан байна. Plans & Billing хэсгээс кредит нэмнэ үү.'
+      } else if (response.status === 401) {
+        message = 'API түлхүүр буруу байна. .env.local дахь ANTHROPIC_API_KEY-г шалгана уу.'
+      } else if (m) {
+        message = m
+      }
+    } catch {
+      // detail wasn't JSON
+    }
+    console.error('Anthropic API error', response.status, detail)
     return new Response(
-      JSON.stringify({ error: 'AI түр боломжгүй байна' }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
+      JSON.stringify({ error: message }),
+      { status: response.status, headers: { 'Content-Type': 'application/json' } }
     )
   }
 
