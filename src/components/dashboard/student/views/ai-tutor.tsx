@@ -14,6 +14,8 @@ import {
   Brain,
   AlertTriangle,
   Target,
+  ChevronDown,
+  Check,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -22,6 +24,7 @@ import {
   type CurriculumUnit,
   type AiAssessment,
 } from "@/lib/api";
+import { MathText } from "@/lib/math";
 
 type Stage = "select" | "loading" | "test" | "result";
 
@@ -44,6 +47,7 @@ export function StudentAITutor() {
   const [loading, setLoading] = useState(true);
   const [aiAvailable, setAiAvailable] = useState(true);
   const [selected, setSelected] = useState<Set<number>>(new Set());
+  const [expanded, setExpanded] = useState<Set<number>>(new Set());
   const [count, setCount] = useState(8);
   const [stage, setStage] = useState<Stage>("select");
   const [assessment, setAssessment] = useState<AiAssessment | null>(null);
@@ -56,6 +60,7 @@ export function StudentAITutor() {
       aiApi.status().catch(() => ({ available: false })),
     ]).then(([u, s]) => {
       setUnits(u);
+      if (u[0]) setExpanded(new Set([u[0].id]));
       setAiAvailable(s.available);
       setLoading(false);
     });
@@ -212,7 +217,7 @@ export function StudentAITutor() {
               <p className="text-sm text-green-700">Сул сэдэв алга — сайн байна! 🎉</p>
             )}
             <div className="rounded-lg border bg-muted/30 p-3 text-sm leading-relaxed text-foreground">
-              {r.recommendations}
+              <MathText text={r.recommendations} />
             </div>
           </CardContent>
         </Card>
@@ -233,7 +238,7 @@ export function StudentAITutor() {
                       <XCircle className="mt-0.5 h-5 w-5 shrink-0 text-red-600" />
                     )}
                     <p className="text-sm font-medium text-foreground">
-                      {i + 1}. {q.question}
+                      {i + 1}. <MathText text={q.question} />
                     </p>
                   </div>
                   <div className="ml-7 space-y-1">
@@ -248,12 +253,12 @@ export function StudentAITutor() {
                               : "text-muted-foreground"
                         }`}
                       >
-                        {String.fromCharCode(65 + idx)}. {opt}
+                        {String.fromCharCode(65 + idx)}. <MathText text={opt} />
                       </div>
                     ))}
                     {q.explanation && (
                       <p className="pt-1 text-xs text-muted-foreground">
-                        💡 {q.explanation}
+                        💡 <MathText text={q.explanation} />
                       </p>
                     )}
                   </div>
@@ -296,7 +301,7 @@ export function StudentAITutor() {
                 </Badge>
               </div>
               <p className="text-sm font-medium text-foreground">
-                {i + 1}. {q.question}
+                {i + 1}. <MathText text={q.question} />
               </p>
               <div className="space-y-2">
                 {q.options.map((opt, idx) => {
@@ -318,7 +323,7 @@ export function StudentAITutor() {
                       >
                         {String.fromCharCode(65 + idx)}
                       </span>
-                      {opt}
+                      <MathText text={opt} />
                     </button>
                   );
                 })}
@@ -387,30 +392,59 @@ export function StudentAITutor() {
               <p className="text-sm text-muted-foreground">Хөтөлбөрийн сэдэв алга</p>
             </div>
           ) : (
-            <div className="space-y-4">
-              {units.map((u) => (
-                <div key={u.id}>
-                  <p className="mb-2 text-sm font-semibold text-foreground">{u.title}</p>
-                  <div className="flex flex-wrap gap-2">
-                    {u.topics.map((t) => {
-                      const on = selected.has(t.id);
-                      return (
-                        <button
-                          key={t.id}
-                          onClick={() => toggle(t.id)}
-                          className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${
-                            on
-                              ? "border-primary bg-primary text-primary-foreground"
-                              : "bg-muted/40 text-muted-foreground hover:bg-accent"
-                          }`}
-                        >
-                          {t.title}
-                        </button>
-                      );
-                    })}
+            <div className="space-y-2">
+              {units.map((u) => {
+                const isOpen = expanded.has(u.id);
+                const selCount = u.topics.filter((t) => selected.has(t.id)).length;
+                return (
+                  <div key={u.id} className="overflow-hidden rounded-xl border">
+                    <button
+                      onClick={() =>
+                        setExpanded((prev) => {
+                          const n = new Set(prev);
+                          if (n.has(u.id)) n.delete(u.id);
+                          else n.add(u.id);
+                          return n;
+                        })
+                      }
+                      className="flex w-full items-center justify-between gap-2 bg-muted/30 px-4 py-3 text-left transition-colors hover:bg-muted/50"
+                    >
+                      <span className="text-sm font-semibold text-foreground">{u.title}</span>
+                      <span className="flex shrink-0 items-center gap-2">
+                        {selCount > 0 && (
+                          <span className="rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold text-primary-foreground">
+                            {selCount}
+                          </span>
+                        )}
+                        <ChevronDown
+                          className={`h-4 w-4 text-muted-foreground transition-transform ${isOpen ? "rotate-180" : ""}`}
+                        />
+                      </span>
+                    </button>
+                    {isOpen && (
+                      <div className="flex flex-wrap gap-2 p-3">
+                        {u.topics.map((t) => {
+                          const on = selected.has(t.id);
+                          return (
+                            <button
+                              key={t.id}
+                              onClick={() => toggle(t.id)}
+                              className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${
+                                on
+                                  ? "border-primary bg-primary text-primary-foreground"
+                                  : "bg-background text-muted-foreground hover:bg-accent"
+                              }`}
+                            >
+                              {on && <Check className="h-3 w-3" />}
+                              {t.title}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </CardContent>
