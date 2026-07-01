@@ -988,3 +988,99 @@ export const materialsApi = {
   }) => api.post<Material>("/materials", dto),
   remove: (id: number) => api.delete<void>(`/materials/${id}`),
 };
+
+// ─────────────── Curriculum (мэдлэгийн сан) ───────────────
+export interface CurriculumTopic {
+  id: number;
+  unit_id: number;
+  order_index: number;
+  title: string;
+  difficulty: string;
+  eyesh_relevant: boolean;
+  summary: string | null;
+  content: string | null;
+  learning_objectives: string[] | null;
+  key_concepts: string[] | null;
+  formulas: { latex: string; description: string }[] | null;
+  worked_examples: { problem: string; solution: string }[] | null;
+  common_mistakes: string[] | null;
+}
+
+export interface CurriculumUnit {
+  id: number;
+  subject: string;
+  grade: number;
+  order_index: number;
+  title: string;
+  description: string | null;
+  eyesh_weight: number;
+  topics: CurriculumTopic[];
+}
+
+export const curriculumApi = {
+  tree: (subject = "math", grade = 11) =>
+    api.get<CurriculumUnit[]>(`/curriculum?subject=${subject}&grade=${grade}`),
+  unit: (id: number) => api.get<CurriculumUnit>(`/curriculum/units/${id}`),
+  topic: (id: number) => api.get<CurriculumTopic>(`/curriculum/topics/${id}`),
+};
+
+// ─────────────── AI Tutor / шалгалт ───────────────
+export interface AiQuestion {
+  id: string;
+  topic_id: number;
+  topic_title: string;
+  difficulty: string;
+  question: string;
+  options: string[];
+  correct_index?: number; // зөвхөн оноолсны дараа
+  explanation?: string;
+}
+
+export interface TopicMastery {
+  topic_id: number;
+  title: string;
+  correct: number;
+  total: number;
+  mastery: number;
+  level: "эзэмшсэн" | "хэсэгчилсэн" | "эзэмшээгүй";
+}
+
+export interface AssessmentResult {
+  correct: number;
+  total: number;
+  percentage: number;
+  grade: string;
+  per_topic: TopicMastery[];
+  gaps: string[];
+  recommendations: string;
+}
+
+export interface AiAssessment {
+  id: number;
+  subject: string;
+  grade: number;
+  status: "generated" | "scored";
+  score?: number | null;
+  result?: AssessmentResult | null;
+  answers?: Record<string, number>;
+  questions: AiQuestion[];
+  created_at?: string;
+}
+
+export interface AssessmentHistoryItem {
+  id: number;
+  status: string;
+  score: number | null;
+  question_count: number;
+  created_at: string;
+}
+
+export const aiApi = {
+  status: () => api.get<{ available: boolean }>("/ai/status"),
+  generate: (topic_ids: number[], count?: number) =>
+    api.post<AiAssessment>("/ai/assessment/generate", { topic_ids, count }),
+  submit: (id: number, answers: Record<string, number>) =>
+    api.post<AiAssessment>(`/ai/assessment/${id}/submit`, { answers }),
+  getOne: (id: number) => api.get<AiAssessment>(`/ai/assessment/${id}`),
+  history: () => api.get<AssessmentHistoryItem[]>("/ai/assessment/history"),
+};
