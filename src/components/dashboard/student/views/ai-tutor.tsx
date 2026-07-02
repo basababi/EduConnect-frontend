@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -40,7 +40,7 @@ const LEVEL_BAR: Record<string, string> = {
   эзэмшээгүй: "bg-red-500",
 };
 
-const COUNTS = [5, 8, 12, 15];
+const COUNTS = [5, 8, 12, 15, 20, 25];
 
 export function StudentAITutor() {
   const [units, setUnits] = useState<CurriculumUnit[]>([]);
@@ -51,8 +51,25 @@ export function StudentAITutor() {
   const [count, setCount] = useState(8);
   const [stage, setStage] = useState<Stage>("select");
   const [assessment, setAssessment] = useState<AiAssessment | null>(null);
-  const [answers, setAnswers] = useState<Record<string, number>>({});
+  const [answers, setAnswers] = useState<Record<string, number | string>>({});
   const [submitting, setSubmitting] = useState(false);
+  const pasteBlocked = useRef(0);
+  const blurEvents = useRef(0);
+
+  // Тест үед цонх/таб орхилтыг тэмдэглэх (soft integrity)
+  useEffect(() => {
+    if (stage !== "test") return;
+    const onBlur = () => (blurEvents.current += 1);
+    window.addEventListener("blur", onBlur);
+    return () => window.removeEventListener("blur", onBlur);
+  }, [stage]);
+
+  const onPasteBlock = (e: React.ClipboardEvent) => {
+    e.preventDefault();
+    pasteBlocked.current += 1;
+    toast.error("Хуулж тавихыг хориглосон — гараар бичнэ үү");
+  };
+  const prevent = (e: React.SyntheticEvent) => e.preventDefault();
 
   useEffect(() => {
     Promise.all([
@@ -95,14 +112,21 @@ export function StudentAITutor() {
 
   async function handleSubmit() {
     if (!assessment) return;
-    const missing = assessment.questions.filter((q) => answers[q.id] === undefined);
+    const missing = assessment.questions.filter((q) => {
+      const v = answers[q.id];
+      if (q.type === "open") return typeof v !== "string" || !v.trim();
+      return v === undefined;
+    });
     if (missing.length) {
       toast.error(`${missing.length} асуулт хариулаагүй байна`);
       return;
     }
     setSubmitting(true);
     try {
-      const scored = await aiApi.submit(assessment.id, answers);
+      const scored = await aiApi.submit(assessment.id, answers, {
+        paste_blocked: pasteBlocked.current,
+        blur_events: blurEvents.current,
+      });
       setAssessment(scored);
       setStage("result");
     } catch (e) {
@@ -164,6 +188,11 @@ export function StudentAITutor() {
               <p className="mt-1 text-sm text-muted-foreground">
                 {r.correct}/{r.total} зөв хариулт
               </p>
+              {r.needs_review_count > 0 && (
+                <p className="text-xs text-amber-600">
+                  ⏳ {r.needs_review_count} нээлттэй хариу багшийн шалгалт хүлээж байна
+                </p>
+              )}
             </div>
             <Button variant="outline" className="gap-2" onClick={reset}>
               <RotateCcw className="h-4 w-4" />
@@ -226,42 +255,81 @@ export function StudentAITutor() {
         <div className="space-y-3">
           <p className="font-semibold text-foreground">Хариултын дэлгэрэнгүй</p>
           {assessment.questions.map((q, i) => {
-            const picked = assessment.answers?.[q.id];
-            const correct = picked === q.correct_index;
+            const ans = assessment.answers?.[q.id];
+            const grade = assessment.open_grades?.[q.id];
+            const isCorrect =
+              q.type === "mcq"
+                ? ans === q.correct_index
+                : (grade?.score ?? 0) >= 0.6;
             return (
               <Card key={q.id}>
                 <CardContent className="space-y-2 p-4">
                   <div className="flex items-start gap-2">
-                    {correct ? (
+                    {isCorrect ? (
                       <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-green-600" />
                     ) : (
                       <XCircle className="mt-0.5 h-5 w-5 shrink-0 text-red-600" />
                     )}
                     <p className="text-sm font-medium text-foreground">
                       {i + 1}. <MathText text={q.question} />
+                      {q.type === "open" && (
+                        <span className="ml-1.5 rounded bg-primary/10 px-1.5 py-0.5 text-[10px] text-primary">
+                          Бичих
+                        </span>
+                      )}
                     </p>
                   </div>
-                  <div className="ml-7 space-y-1">
-                    {q.options.map((opt, idx) => (
-                      <div
-                        key={idx}
-                        className={`rounded-md px-2 py-1 text-sm ${
-                          idx === q.correct_index
-                            ? "bg-green-50 font-medium text-green-800"
-                            : idx === picked
-                              ? "bg-red-50 text-red-700 line-through"
-                              : "text-muted-foreground"
-                        }`}
-                      >
-                        {String.fromCharCode(65 + idx)}. <MathText text={opt} />
+
+                  {q.type === "mcq" ? (
+                    <div className="ml-7 space-y-1">
+                      {(q.options ?? []).map((opt, idx) => (
+                        <div
+                          key={idx}
+                          className={`rounded-md px-2 py-1 text-sm ${
+                            idx === q.correct_index
+                              ? "bg-green-50 font-medium text-green-800"
+                              : idx === ans
+                                ? "bg-red-50 text-red-700 line-through"
+                                : "text-muted-foreground"
+                          }`}
+                        >
+                          {String.fromCharCode(65 + idx)}. <MathText text={opt} />
+                        </div>
+                      ))}
+                      {q.explanation && (
+                        <p className="pt-1 text-xs text-muted-foreground">
+                          💡 <MathText text={q.explanation} />
+                        </p>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="ml-7 space-y-2 text-sm">
+                      <div className="rounded-md bg-muted/40 p-2">
+                        <p className="text-xs font-medium text-muted-foreground">
+                          Таны хариулт
+                          {grade ? ` · ${Math.round(grade.score * 100)}%` : ""}:
+                        </p>
+                        <p className="whitespace-pre-wrap text-foreground">
+                          <MathText text={typeof ans === "string" ? ans : "—"} />
+                        </p>
                       </div>
-                    ))}
-                    {q.explanation && (
-                      <p className="pt-1 text-xs text-muted-foreground">
-                        💡 <MathText text={q.explanation} />
-                      </p>
-                    )}
-                  </div>
+                      {grade?.feedback && (
+                        <p className="text-xs text-muted-foreground">
+                          💬 <MathText text={grade.feedback} />
+                        </p>
+                      )}
+                      {q.final_answer && (
+                        <p className="text-xs text-green-700">
+                          ✓ Зөв хариу: <MathText text={q.final_answer} />
+                        </p>
+                      )}
+                      {grade?.needs_review && (
+                        <p className="text-xs text-amber-600">
+                          ⏳ Багшийн шалгалт хүлээж байна
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             );
@@ -296,6 +364,11 @@ export function StudentAITutor() {
             <CardContent className="space-y-3 p-5">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="text-xs text-muted-foreground">{q.topic_title}</span>
+                {q.type === "open" && (
+                  <Badge className="bg-primary/10 text-[10px] text-primary" variant="secondary">
+                    ✍ Бичих
+                  </Badge>
+                )}
                 <Badge className={`text-[10px] ${DIFF[q.difficulty]?.cls ?? ""}`} variant="secondary">
                   {DIFF[q.difficulty]?.label ?? q.difficulty}
                 </Badge>
@@ -303,31 +376,51 @@ export function StudentAITutor() {
               <p className="text-sm font-medium text-foreground">
                 {i + 1}. <MathText text={q.question} />
               </p>
-              <div className="space-y-2">
-                {q.options.map((opt, idx) => {
-                  const active = answers[q.id] === idx;
-                  return (
-                    <button
-                      key={idx}
-                      onClick={() => setAnswers((p) => ({ ...p, [q.id]: idx }))}
-                      className={`flex w-full items-center gap-2 rounded-lg border p-2.5 text-left text-sm transition-colors ${
-                        active
-                          ? "border-primary bg-primary/5 font-medium text-primary"
-                          : "hover:bg-muted/50"
-                      }`}
-                    >
-                      <span
-                        className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-xs ${
-                          active ? "border-primary bg-primary text-primary-foreground" : ""
+              {q.type === "mcq" ? (
+                <div className="space-y-2">
+                  {(q.options ?? []).map((opt, idx) => {
+                    const active = answers[q.id] === idx;
+                    return (
+                      <button
+                        key={idx}
+                        onClick={() => setAnswers((p) => ({ ...p, [q.id]: idx }))}
+                        className={`flex w-full items-center gap-2 rounded-lg border p-2.5 text-left text-sm transition-colors ${
+                          active
+                            ? "border-primary bg-primary/5 font-medium text-primary"
+                            : "hover:bg-muted/50"
                         }`}
                       >
-                        {String.fromCharCode(65 + idx)}
-                      </span>
-                      <MathText text={opt} />
-                    </button>
-                  );
-                })}
-              </div>
+                        <span
+                          className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-xs ${
+                            active ? "border-primary bg-primary text-primary-foreground" : ""
+                          }`}
+                        >
+                          {String.fromCharCode(65 + idx)}
+                        </span>
+                        <MathText text={opt} />
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="space-y-1">
+                  <textarea
+                    value={typeof answers[q.id] === "string" ? (answers[q.id] as string) : ""}
+                    onChange={(e) => setAnswers((p) => ({ ...p, [q.id]: e.target.value }))}
+                    onPaste={onPasteBlock}
+                    onCopy={prevent}
+                    onCut={prevent}
+                    onDrop={prevent}
+                    onContextMenu={prevent}
+                    rows={4}
+                    placeholder="Хариултаа гараар бич. Математикийг $x^2$ хэлбэрээр бичиж болно."
+                    className="w-full resize-y rounded-lg border p-3 text-sm focus:border-primary focus:outline-none"
+                  />
+                  <p className="text-[11px] text-amber-600">
+                    ✍ Гараар бич — хуулж тавихыг хориглосон.
+                  </p>
+                </div>
+              )}
             </CardContent>
           </Card>
         ))}
@@ -453,7 +546,12 @@ export function StudentAITutor() {
       <Card>
         <CardContent className="flex flex-wrap items-center justify-between gap-4 p-6">
           <div className="flex items-center gap-3">
-            <span className="text-sm text-muted-foreground">Асуултын тоо:</span>
+            <span className="text-sm text-muted-foreground">
+              Асуултын тоо
+              <span className="block text-[11px] text-muted-foreground/70">
+                +2–3 бичих асуулт
+              </span>
+            </span>
             <div className="flex gap-1.5">
               {COUNTS.map((c) => (
                 <button

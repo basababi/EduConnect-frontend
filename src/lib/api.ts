@@ -1025,15 +1025,30 @@ export const curriculumApi = {
 };
 
 // ─────────────── AI Tutor / шалгалт ───────────────
+export type QuestionType = "mcq" | "open";
+
 export interface AiQuestion {
   id: string;
+  type: QuestionType;
   topic_id: number;
   topic_title: string;
   difficulty: string;
+  bloom?: string;
   question: string;
-  options: string[];
-  correct_index?: number; // зөвхөн оноолсны дараа
-  explanation?: string;
+  options?: string[]; // зөвхөн mcq
+  correct_index?: number; // зөвхөн оноолсны дараа (mcq)
+  explanation?: string; // mcq
+  sample_answer?: string; // open (оноолсны дараа)
+  final_answer?: string; // open (оноолсны дараа)
+}
+
+export interface OpenGrade {
+  score: number; // 0..1
+  feedback: string;
+  confidence: number;
+  needs_review: boolean;
+  matched_points?: string[];
+  missing?: string[];
 }
 
 export interface TopicMastery {
@@ -1053,6 +1068,12 @@ export interface AssessmentResult {
   per_topic: TopicMastery[];
   gaps: string[];
   recommendations: string;
+  needs_review_count: number;
+}
+
+export interface IntegritySignal {
+  paste_blocked: number;
+  blur_events: number;
 }
 
 export interface AiAssessment {
@@ -1062,7 +1083,8 @@ export interface AiAssessment {
   status: "generated" | "scored";
   score?: number | null;
   result?: AssessmentResult | null;
-  answers?: Record<string, number>;
+  answers?: Record<string, number | string>;
+  open_grades?: Record<string, OpenGrade> | null;
   questions: AiQuestion[];
   created_at?: string;
 }
@@ -1077,10 +1099,18 @@ export interface AssessmentHistoryItem {
 
 export const aiApi = {
   status: () => api.get<{ available: boolean }>("/ai/status"),
-  generate: (topic_ids: number[], count?: number) =>
-    api.post<AiAssessment>("/ai/assessment/generate", { topic_ids, count }),
-  submit: (id: number, answers: Record<string, number>) =>
-    api.post<AiAssessment>(`/ai/assessment/${id}/submit`, { answers }),
+  generate: (topic_ids: number[], count?: number, open_count?: number) =>
+    api.post<AiAssessment>("/ai/assessment/generate", {
+      topic_ids,
+      count,
+      open_count,
+    }),
+  submit: (
+    id: number,
+    answers: Record<string, number | string>,
+    integrity?: IntegritySignal,
+  ) =>
+    api.post<AiAssessment>(`/ai/assessment/${id}/submit`, { answers, integrity }),
   getOne: (id: number) => api.get<AiAssessment>(`/ai/assessment/${id}`),
   history: () => api.get<AssessmentHistoryItem[]>("/ai/assessment/history"),
 };
