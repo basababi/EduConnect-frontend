@@ -1099,11 +1099,23 @@ export interface AssessmentHistoryItem {
 
 export const aiApi = {
   status: () => api.get<{ available: boolean }>("/ai/status"),
-  generate: (topic_ids: number[], count?: number, open_count?: number) =>
+  generate: (
+    topic_ids: number[],
+    count?: number,
+    open_count?: number,
+    level?: string,
+  ) =>
     api.post<AiAssessment>("/ai/assessment/generate", {
       topic_ids,
       count,
       open_count,
+      level,
+    }),
+  explain: (assessment_id: number, question_id: string, message?: string) =>
+    api.post<{ explanation: string }>("/ai/explain", {
+      assessment_id,
+      question_id,
+      message,
     }),
   submit: (
     id: number,

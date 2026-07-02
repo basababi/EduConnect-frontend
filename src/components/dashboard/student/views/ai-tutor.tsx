@@ -34,6 +34,14 @@ import {
   type AssessmentHistoryItem,
 } from "@/lib/api";
 import { MathText } from "@/lib/math";
+import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+} from "recharts";
 
 type Stage = "select" | "loading" | "test" | "result" | "lesson";
 
@@ -51,6 +59,13 @@ const LEVEL_BAR: Record<string, string> = {
 
 const COUNTS = [5, 8, 12, 15, 20, 25];
 
+const LEVELS = [
+  { v: "auto", label: "Авто" },
+  { v: "easy", label: "Хялбар" },
+  { v: "medium", label: "Дунд" },
+  { v: "hard", label: "Хүнд" },
+];
+
 export function StudentAITutor() {
   const [units, setUnits] = useState<CurriculumUnit[]>([]);
   const [loading, setLoading] = useState(true);
@@ -58,6 +73,9 @@ export function StudentAITutor() {
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [expanded, setExpanded] = useState<Set<number>>(new Set());
   const [count, setCount] = useState(8);
+  const [level, setLevel] = useState("auto"); // F4
+  const [explains, setExplains] = useState<Record<string, string>>({}); // F5
+  const [whyLoading, setWhyLoading] = useState<string | null>(null);
   const [stage, setStage] = useState<Stage>("select");
   const [assessment, setAssessment] = useState<AiAssessment | null>(null);
   const [answers, setAnswers] = useState<Record<string, number | string>>({});
@@ -134,9 +152,24 @@ export function StudentAITutor() {
         return;
       }
       setAssessment(a);
+      setExplains({});
       setStage("result");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Нээж чадсангүй");
+    }
+  }
+
+  // ── F5 · "Яагаад?" ──
+  async function askWhy(qId: string) {
+    if (!assessment || explains[qId]) return;
+    setWhyLoading(qId);
+    try {
+      const r = await aiApi.explain(assessment.id, qId);
+      setExplains((e) => ({ ...e, [qId]: r.explanation }));
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Тайлбар авч чадсангүй");
+    } finally {
+      setWhyLoading(null);
     }
   }
 
@@ -169,9 +202,10 @@ export function StudentAITutor() {
     }
     setStage("loading");
     try {
-      const a = await aiApi.generate([...selected], count);
+      const a = await aiApi.generate([...selected], count, undefined, level);
       setAssessment(a);
       setAnswers({});
+      setExplains({});
       setStage("test");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Шалгалт үүсгэж чадсангүй");
@@ -408,6 +442,24 @@ export function StudentAITutor() {
                       )}
                     </div>
                   )}
+
+                  {/* F5 · Яагаад? */}
+                  <div className="ml-7">
+                    {explains[q.id] ? (
+                      <div className="rounded-lg bg-blue-50 p-2.5 text-xs leading-relaxed text-foreground">
+                        <p className="mb-1 font-medium text-blue-700">🤔 Тайлбар</p>
+                        <MathText text={explains[q.id]} />
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => askWhy(q.id)}
+                        disabled={whyLoading === q.id}
+                        className="text-xs font-medium text-primary hover:underline disabled:opacity-50"
+                      >
+                        {whyLoading === q.id ? "Тайлбарлаж байна..." : "🤔 Яагаад? — гүнзгий тайлбар"}
+                      </button>
+                    )}
+                  </div>
                 </CardContent>
               </Card>
             );
@@ -422,7 +474,11 @@ export function StudentAITutor() {
     return (
       <div className="animate-in-rise space-y-6 p-6">
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon-sm" onClick={() => setStage("result")}>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            onClick={() => setStage(assessment?.result ? "result" : "select")}
+          >
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary text-primary-foreground">
@@ -545,8 +601,12 @@ export function StudentAITutor() {
                         Дадлага: {practiceResult.correct}/{practiceResult.total} (
                         {practiceResult.percentage}%)
                       </span>
-                      <Button variant="outline" size="sm" onClick={() => setStage("result")}>
-                        Үр дүн рүү буцах
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setStage(assessment?.result ? "result" : "select")}
+                      >
+                        Буцах
                       </Button>
                     </div>
                   ) : (
@@ -716,6 +776,40 @@ export function StudentAITutor() {
             </button>
             {showProgress && (
               <div className="mt-4 space-y-4">
+                {hist.filter((h) => h.status === "scored").length >= 2 && (
+                  <div>
+                    <p className="mb-1 text-xs font-medium text-muted-foreground">
+                      Онооны явц
+                    </p>
+                    <div className="h-32 w-full">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart
+                          data={[...hist]
+                            .filter((h) => h.status === "scored")
+                            .reverse()
+                            .map((h) => ({
+                              name: new Date(h.created_at).toLocaleDateString(
+                                "mn-MN",
+                                { month: "numeric", day: "numeric" },
+                              ),
+                              score: h.score ?? 0,
+                            }))}
+                        >
+                          <XAxis dataKey="name" tick={{ fontSize: 10 }} />
+                          <YAxis domain={[0, 100]} width={28} tick={{ fontSize: 10 }} />
+                          <Tooltip />
+                          <Line
+                            type="monotone"
+                            dataKey="score"
+                            stroke="var(--chart-2)"
+                            strokeWidth={2}
+                            dot={{ r: 3 }}
+                          />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+                )}
                 {progress.topics.length > 0 && (
                   <div className="space-y-2">
                     <p className="text-xs font-medium text-muted-foreground">
@@ -828,18 +922,29 @@ export function StudentAITutor() {
                         {u.topics.map((t) => {
                           const on = selected.has(t.id);
                           return (
-                            <button
+                            <div
                               key={t.id}
-                              onClick={() => toggle(t.id)}
-                              className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${
-                                on
-                                  ? "border-primary bg-primary text-primary-foreground"
-                                  : "bg-background text-muted-foreground hover:bg-accent"
-                              }`}
+                              className="inline-flex items-center overflow-hidden rounded-lg border"
                             >
-                              {on && <Check className="h-3 w-3" />}
-                              {t.title}
-                            </button>
+                              <button
+                                onClick={() => toggle(t.id)}
+                                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-colors ${
+                                  on
+                                    ? "bg-primary text-primary-foreground"
+                                    : "bg-background text-muted-foreground hover:bg-accent"
+                                }`}
+                              >
+                                {on && <Check className="h-3 w-3" />}
+                                {t.title}
+                              </button>
+                              <button
+                                onClick={() => openLesson(t.id)}
+                                title="Судлах"
+                                className="border-l px-2 py-1.5 text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary"
+                              >
+                                <BookOpen className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
                           );
                         })}
                       </div>
@@ -854,27 +959,52 @@ export function StudentAITutor() {
 
       <Card>
         <CardContent className="flex flex-wrap items-center justify-between gap-4 p-6">
-          <div className="flex items-center gap-3">
-            <span className="text-sm text-muted-foreground">
-              Асуултын тоо
-              <span className="block text-[11px] text-muted-foreground/70">
-                +2–3 бичих асуулт
+          <div className="space-y-3">
+            <div className="flex items-center gap-3">
+              <span className="text-sm text-muted-foreground">
+                Асуултын тоо
+                <span className="block text-[11px] text-muted-foreground/70">
+                  +2–3 бичих асуулт
+                </span>
               </span>
-            </span>
-            <div className="flex gap-1.5">
-              {COUNTS.map((c) => (
-                <button
-                  key={c}
-                  onClick={() => setCount(c)}
-                  className={`h-8 w-10 rounded-lg text-sm font-medium transition-colors ${
-                    count === c
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-muted text-muted-foreground hover:bg-accent"
-                  }`}
-                >
-                  {c}
-                </button>
-              ))}
+              <div className="flex flex-wrap gap-1.5">
+                {COUNTS.map((c) => (
+                  <button
+                    key={c}
+                    onClick={() => setCount(c)}
+                    className={`h-8 w-10 rounded-lg text-sm font-medium transition-colors ${
+                      count === c
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-muted text-muted-foreground hover:bg-accent"
+                    }`}
+                  >
+                    {c}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="text-sm text-muted-foreground">
+                Хүндрэл
+                <span className="block text-[11px] text-muted-foreground/70">
+                  Авто = түвшинд тохируулна
+                </span>
+              </span>
+              <div className="flex flex-wrap gap-1.5">
+                {LEVELS.map((l) => (
+                  <button
+                    key={l.v}
+                    onClick={() => setLevel(l.v)}
+                    className={`rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors ${
+                      level === l.v
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-muted text-muted-foreground hover:bg-accent"
+                    }`}
+                  >
+                    {l.label}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
           <Button
