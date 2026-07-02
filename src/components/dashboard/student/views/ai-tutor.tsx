@@ -769,6 +769,21 @@ export function StudentAITutor() {
                 <span className="text-xs font-normal text-muted-foreground">
                   ({progress.total_assessments} шалгалт · дундаж {progress.avg_score}%)
                 </span>
+                {progress.streak > 1 && (
+                  <span className="rounded-full bg-amber/10 px-2 py-0.5 text-[10px] font-medium text-amber-700">
+                    🔥 {progress.streak} өдөр
+                  </span>
+                )}
+                {progress.mastered > 0 && (
+                  <span className="rounded-full bg-green-100 px-2 py-0.5 text-[10px] font-medium text-green-700">
+                    ✅ {progress.mastered} эзэмшсэн
+                  </span>
+                )}
+                {progress.due_count > 0 && (
+                  <span className="rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-medium text-red-700">
+                    ⏰ {progress.due_count} давтах
+                  </span>
+                )}
               </span>
               <ChevronDown
                 className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${showProgress ? "rotate-180" : ""}`}
@@ -818,7 +833,14 @@ export function StudentAITutor() {
                     {progress.topics.slice(0, 6).map((t) => (
                       <div key={t.topic_id} className="space-y-1">
                         <div className="flex items-center justify-between text-xs">
-                          <span className="text-foreground">{t.title}</span>
+                          <span className="text-foreground">
+                            {t.title}
+                            {t.due && (
+                              <span className="ml-1 rounded bg-red-100 px-1 text-[9px] text-red-600">
+                                давтах цаг
+                              </span>
+                            )}
+                          </span>
                           <span className="flex items-center gap-1 text-muted-foreground">
                             {t.mastery}%
                             {t.trend > 0 && (

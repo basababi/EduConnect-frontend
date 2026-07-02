@@ -1180,12 +1180,74 @@ export interface ProgressTopic {
   attempts: number;
   trend: number;
   last_seen: string;
+  due: boolean;
 }
 export interface AiProgress {
   total_assessments: number;
   avg_score: number;
+  streak: number;
+  mastered: number;
+  due_count: number;
   topics: ProgressTopic[];
 }
+
+// F8 · ангийн gap
+export interface ClassGaps {
+  class_id: number;
+  student_count: number;
+  tested_count: number;
+  topics: {
+    topic_id: number;
+    title: string;
+    avg_mastery: number;
+    attempts: number;
+    weak_count: number;
+  }[];
+  at_risk: {
+    student_id: number;
+    name: string;
+    avg_score: number;
+    attempts: number;
+  }[];
+}
+
+// Question bank
+export interface BankQuestion {
+  id: number;
+  topic_id: number;
+  topic_title: string | null;
+  type: QuestionType;
+  bloom: string | null;
+  difficulty: string;
+  question: string;
+  options: string[] | null;
+  correct_index: number | null;
+  explanation: string | null;
+  rubric: { key_points: string[]; final_answer: string } | null;
+  source: string;
+  status: string;
+  created_at: string;
+}
+export interface BankStats {
+  draft: number;
+  approved: number;
+  rejected: number;
+}
+
+export const aiTeacherApi = {
+  classGaps: (classId: number) =>
+    api.get<ClassGaps>(`/ai/class/${classId}/gaps`),
+  bankList: (params?: { topic_id?: number; status?: string }) => {
+    const q = new URLSearchParams();
+    if (params?.topic_id) q.set("topic_id", String(params.topic_id));
+    if (params?.status) q.set("status", params.status);
+    const qs = q.toString();
+    return api.get<BankQuestion[]>(`/ai/bank${qs ? `?${qs}` : ""}`);
+  },
+  bankStats: () => api.get<BankStats>("/ai/bank/stats"),
+  bankReview: (id: number, action: "approve" | "reject") =>
+    api.patch<{ id: number; status: string }>(`/ai/bank/${id}/${action}`),
+};
 export interface ReviewItem {
   assessment_id: number;
   student_id: number;
