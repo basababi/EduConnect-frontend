@@ -1,36 +1,92 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# EduConnect Mongolia
 
-## Getting Started
+> Монголын ерөнхий боловсролын ахлах ангийн (10–12) хувийн сургуулиудад зориулсан
+> **B2B2C сургуулийн удирдлагын SaaS платформ.** Сургуулийн удирдлага, багш, эцэг эх,
+> сурагч — нэг платформ дээр. **AI хиймэл оюунд суурилсан хувийн багштай.**
 
-First, run the development server:
+![Next.js](https://img.shields.io/badge/Next.js-16-black) ![React](https://img.shields.io/badge/React-19-blue) ![TypeScript](https://img.shields.io/badge/TypeScript-5-blue) ![Tailwind](https://img.shields.io/badge/Tailwind-v4-38bdf8)
+
+---
+
+## ✨ Онцлог боломжууд
+
+### 👨‍🏫 Багш
+Хичээл үүсгэх · ирц бүртгэл (анги бүхэлд) · дүн + жигнэсэн дундаж · даалгавар ба дүгнэлт · хичээлийн материал · эцэг эхтэй real-time чат · тайлан
+
+### 🎓 Сурагч
+Хуваарь · даалгавар илгээх · хичээлийн материал · дүнгээ харах · **AI Tutor (хувийн багш)**
+
+### 👨‍👩‍👧 Эцэг эх
+Хүүхдийн дүн/ирц real-time хяналт · багштай чат · эрсдэлийн үнэлгээ
+
+### 🏫 Админ / Супер админ
+Хэрэглэгч урих/удирдах · анги/сурагч удирдах (Excel импорт) · олон сургуулийн удирдлага · тайлан
+
+---
+
+## 🤖 AI Tutor — гол ялгарал
+
+Бодит сурах бичгийн агуулгад тулгуурласан **хувийн AI багш** (Математик 11 пилот):
+
+- **Диагностик тест** — сэдэв сонгож, adaptive хүндрэлтэй тест (сонголттой + гараар бичих асуулт)
+- **Ухаалаг үнэлгээ** — сонголттойг детерминист кодоор, нээлттэйг AI rubric-аар (багшийн баталгаатай)
+- **Алдаанд суурилсан хичээл** — сул сэдэв бүрд тайлбар + бодсон жишээ + дадлага
+- **Дэд ур чадварын gap** — юу мэдэхгүйг тодорхойлж, Монголын үнэлгээний стандартад буулгах
+- **Ахицын хяналт** — эзэмшилтийн трэнд, streak, зайтай давталт
+- **Багшийн хяналт** — question bank батлах, ангийн gap dashboard
+
+> Сурах ухааны онолд суурилсан: mastery learning, retrieval practice, worked-example effect,
+> misconception-driven remediation, spaced repetition.
+
+---
+
+## 🛠 Технологи
+
+**Frontend:** Next.js 16 (App Router) · React 19 · TypeScript · Tailwind CSS v4 · shadcn/ui · recharts · KaTeX · sonner
+
+**Backend:** NestJS 11 · TypeORM · PostgreSQL · JWT + Google OAuth · Google Gemini (AI)
+
+**Deploy:** Frontend → Vercel · Backend + DB → Railway
+
+---
+
+## 🏗 Архитектур
+
+- **Multi-tenant** — сургууль бүр `school_id`-аар тусгаарлагдсан
+- **RBAC** — super_admin / admin / teacher / parent / student дүрийн эрх
+- **AI grounding-first** — бүх AI гаралт curriculum агуулгад тулгуурлана (hallucination-аас сэргийлнэ)
+- **Question bank** — AI үүсгэнэ → багш батлана → зардал буурч чанар тогтворжино
+
+---
+
+## 🚀 Ажиллуулах (dev)
 
 ```bash
+# Хамаарлыг суулгах
+npm install
+
+# Орчны хувьсагч (.env.local)
+# NEXT_PUBLIC_API_URL=http://localhost:3001   # backend хаяг (/api/v1-гүй)
+
+# Хөгжүүлэлтийн сервер
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Апп `http://localhost:3000` дээр ажиллана. Backend (NestJS) тусдаа `EduConnect` repo-д.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 📦 Build & Deploy
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run build   # production build
+npm run start   # production сервер
+```
 
-## Learn More
+Vercel дээр автомат deploy (`main` салбар руу push хийхэд).
 
-To learn more about Next.js, take a look at the following resources:
+---
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 📄 Лиценз
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Хувийн төсөл — бүх эрх хуулиар хамгаалагдсан.
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+*Монголын боловсролд зориулав.*
