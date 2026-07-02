@@ -22,6 +22,7 @@ import {
   Check,
   X,
   AlertTriangle,
+  Bot,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -152,13 +153,19 @@ function ReviewsTab() {
                 </p>
               </div>
               {it.correct_answer && (
-                <p className="text-xs text-green-700">
-                  ✓ Зөв хариу: <MathText text={it.correct_answer} />
+                <p className="flex items-center gap-1 text-xs text-green-700">
+                  <Check className="h-3 w-3 shrink-0" />
+                  <span>
+                    Зөв хариу: <MathText text={it.correct_answer} />
+                  </span>
                 </p>
               )}
-              <div className="rounded-lg border border-amber/30 bg-amber/5 p-2 text-xs text-muted-foreground">
-                🤖 AI санал: {Math.round(it.ai_score * 100)}% —{" "}
-                <MathText text={it.ai_feedback} />
+              <div className="flex items-start gap-1.5 rounded-lg border border-amber/30 bg-amber/5 p-2 text-xs text-muted-foreground">
+                <Bot className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-600" />
+                <span>
+                  AI санал: {Math.round(it.ai_score * 100)}% —{" "}
+                  <MathText text={it.ai_feedback} />
+                </span>
               </div>
               <Input
                 value={feedback[k] ?? ""}
@@ -285,10 +292,12 @@ function BankTab() {
                   {(q.options ?? []).map((o, idx) => (
                     <div
                       key={idx}
-                      className={`text-sm ${idx === q.correct_index ? "font-medium text-green-700" : "text-muted-foreground"}`}
+                      className={`flex items-center gap-1 text-sm ${idx === q.correct_index ? "font-medium text-green-700" : "text-muted-foreground"}`}
                     >
-                      {String.fromCharCode(65 + idx)}. <MathText text={o} />
-                      {idx === q.correct_index && " ✓"}
+                      <span>
+                        {String.fromCharCode(65 + idx)}. <MathText text={o} />
+                      </span>
+                      {idx === q.correct_index && <Check className="h-3.5 w-3.5" />}
                     </div>
                   ))}
                 </div>

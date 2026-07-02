@@ -21,6 +21,13 @@ import {
   Lightbulb,
   History,
   TrendingUp,
+  Flame,
+  Award,
+  Clock,
+  HelpCircle,
+  PenLine,
+  Lock,
+  MessageSquare,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -292,8 +299,9 @@ export function StudentAITutor() {
                 {r.correct}/{r.total} зөв хариулт
               </p>
               {r.needs_review_count > 0 && (
-                <p className="text-xs text-amber-600">
-                  ⏳ {r.needs_review_count} нээлттэй хариу багшийн шалгалт хүлээж байна
+                <p className="inline-flex items-center gap-1 text-xs text-amber-600">
+                  <Clock className="h-3 w-3" />
+                  {r.needs_review_count} нээлттэй хариу багшийн шалгалт хүлээж байна
                 </p>
               )}
             </div>
@@ -426,18 +434,25 @@ export function StudentAITutor() {
                         </p>
                       </div>
                       {grade?.feedback && (
-                        <p className="text-xs text-muted-foreground">
-                          💬 <MathText text={grade.feedback} />
+                        <p className="flex items-start gap-1 text-xs text-muted-foreground">
+                          <MessageSquare className="mt-0.5 h-3 w-3 shrink-0" />
+                          <span>
+                            <MathText text={grade.feedback} />
+                          </span>
                         </p>
                       )}
                       {q.final_answer && (
-                        <p className="text-xs text-green-700">
-                          ✓ Зөв хариу: <MathText text={q.final_answer} />
+                        <p className="flex items-center gap-1 text-xs text-green-700">
+                          <Check className="h-3 w-3 shrink-0" />
+                          <span>
+                            Зөв хариу: <MathText text={q.final_answer} />
+                          </span>
                         </p>
                       )}
                       {grade?.needs_review && (
-                        <p className="text-xs text-amber-600">
-                          ⏳ Багшийн шалгалт хүлээж байна
+                        <p className="inline-flex items-center gap-1 text-xs text-amber-600">
+                          <Clock className="h-3 w-3" />
+                          Багшийн шалгалт хүлээж байна
                         </p>
                       )}
                     </div>
@@ -447,16 +462,22 @@ export function StudentAITutor() {
                   <div className="ml-7">
                     {explains[q.id] ? (
                       <div className="rounded-lg bg-blue-50 p-2.5 text-xs leading-relaxed text-foreground">
-                        <p className="mb-1 font-medium text-blue-700">🤔 Тайлбар</p>
+                        <p className="mb-1 flex items-center gap-1 font-medium text-blue-700">
+                          <HelpCircle className="h-3.5 w-3.5" />
+                          Дэлгэрэнгүй тайлбар
+                        </p>
                         <MathText text={explains[q.id]} />
                       </div>
                     ) : (
                       <button
                         onClick={() => askWhy(q.id)}
                         disabled={whyLoading === q.id}
-                        className="text-xs font-medium text-primary hover:underline disabled:opacity-50"
+                        className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline disabled:opacity-50"
                       >
-                        {whyLoading === q.id ? "Тайлбарлаж байна..." : "🤔 Яагаад? — гүнзгий тайлбар"}
+                        <HelpCircle className="h-3.5 w-3.5" />
+                        {whyLoading === q.id
+                          ? "Тайлбарлаж байна..."
+                          : "Яагаад? Дэлгэрэнгүй тайлбар"}
                       </button>
                     )}
                   </div>
@@ -649,8 +670,12 @@ export function StudentAITutor() {
               <div className="flex flex-wrap items-center gap-2">
                 <span className="text-xs text-muted-foreground">{q.topic_title}</span>
                 {q.type === "open" && (
-                  <Badge className="bg-primary/10 text-[10px] text-primary" variant="secondary">
-                    ✍ Бичих
+                  <Badge
+                    className="inline-flex items-center gap-1 bg-primary/10 text-[10px] text-primary"
+                    variant="secondary"
+                  >
+                    <PenLine className="h-3 w-3" />
+                    Бичих
                   </Badge>
                 )}
                 <Badge className={`text-[10px] ${DIFF[q.difficulty]?.cls ?? ""}`} variant="secondary">
@@ -700,8 +725,9 @@ export function StudentAITutor() {
                     placeholder="Хариултаа гараар бич. Математикийг $x^2$ хэлбэрээр бичиж болно."
                     className="w-full resize-y rounded-lg border p-3 text-sm focus:border-primary focus:outline-none"
                   />
-                  <p className="text-[11px] text-amber-600">
-                    ✍ Гараар бич — хуулж тавихыг хориглосон.
+                  <p className="inline-flex items-center gap-1 text-[11px] text-amber-600">
+                    <Lock className="h-3 w-3" />
+                    Гараар бич — хуулж тавих хориотой.
                   </p>
                 </div>
               )}
@@ -770,18 +796,21 @@ export function StudentAITutor() {
                   ({progress.total_assessments} шалгалт · дундаж {progress.avg_score}%)
                 </span>
                 {progress.streak > 1 && (
-                  <span className="rounded-full bg-amber/10 px-2 py-0.5 text-[10px] font-medium text-amber-700">
-                    🔥 {progress.streak} өдөр
+                  <span className="inline-flex items-center gap-1 rounded-full bg-amber/10 px-2 py-0.5 text-[10px] font-medium text-amber-700">
+                    <Flame className="h-3 w-3" />
+                    {progress.streak} өдөр
                   </span>
                 )}
                 {progress.mastered > 0 && (
-                  <span className="rounded-full bg-green-100 px-2 py-0.5 text-[10px] font-medium text-green-700">
-                    ✅ {progress.mastered} эзэмшсэн
+                  <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-[10px] font-medium text-green-700">
+                    <Award className="h-3 w-3" />
+                    {progress.mastered} эзэмшсэн
                   </span>
                 )}
                 {progress.due_count > 0 && (
-                  <span className="rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-medium text-red-700">
-                    ⏰ {progress.due_count} давтах
+                  <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-medium text-red-700">
+                    <Clock className="h-3 w-3" />
+                    {progress.due_count} давтах
                   </span>
                 )}
               </span>
@@ -860,9 +889,10 @@ export function StudentAITutor() {
                         {t.mastery < 60 && (
                           <button
                             onClick={() => openLesson(t.topic_id)}
-                            className="text-[11px] font-medium text-primary hover:underline"
+                            className="inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:underline"
                           >
-                            → хичээл үзэх
+                            <GraduationCap className="h-3 w-3" />
+                            Хичээл үзэх
                           </button>
                         )}
                       </div>
