@@ -3,6 +3,7 @@
 import {
   Home, CheckSquare, BarChart3, FileText, MessageSquare,
   Calendar, FileBarChart, Settings, Megaphone, Users, FolderOpen, BookMarked,
+  ClipboardCheck,
 } from "lucide-react";
 import { type User } from "@/lib/api";
 import {
@@ -18,6 +19,7 @@ export type TeacherView =
   | "assignments"
   | "materials"
   | "messages"
+  | "ai-reviews"
   | "schedule"
   | "announcements"
   | "reports"
@@ -34,6 +36,7 @@ const SECTIONS: ShellNavSection[] = [
       { id: "grades", label: "Дүн шинжилгээ", icon: BarChart3 },
       { id: "assignments", label: "Даалгавар", icon: FileText },
       { id: "materials", label: "Хичээлийн материал", icon: FolderOpen },
+      { id: "ai-reviews", label: "AI шалгалт", icon: ClipboardCheck },
       { id: "messages", label: "Мессеж", icon: MessageSquare },
     ],
   },

@@ -22,6 +22,7 @@ import { TeacherAssignments } from "@/components/dashboard/teacher/views/assignm
 import { TeacherMessages } from "@/components/dashboard/teacher/views/messages";
 import { TeacherSchedule } from "@/components/dashboard/teacher/views/schedule";
 import { TeacherReports } from "@/components/dashboard/teacher/views/reports";
+import { TeacherAiReviews } from "@/components/dashboard/teacher/views/ai-reviews";
 import { AccountSettings } from "@/components/dashboard/account-settings";
 
 // Student
@@ -135,6 +136,7 @@ export default function Home() {
           {teacherView === "assignments" && <TeacherAssignments />}
           {teacherView === "materials" && <TeacherMaterials />}
           {teacherView === "messages" && <TeacherMessages />}
+          {teacherView === "ai-reviews" && <TeacherAiReviews />}
           {teacherView === "schedule" && <TeacherSchedule />}
           {teacherView === "announcements" && <AnnouncementsView />}
           {teacherView === "reports" && <TeacherReports />}

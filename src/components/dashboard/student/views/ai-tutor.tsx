@@ -16,6 +16,11 @@ import {
   Target,
   ChevronDown,
   Check,
+  GraduationCap,
+  ArrowLeft,
+  Lightbulb,
+  History,
+  TrendingUp,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -23,10 +28,14 @@ import {
   aiApi,
   type CurriculumUnit,
   type AiAssessment,
+  type AiLesson,
+  type PracticeResult,
+  type AiProgress,
+  type AssessmentHistoryItem,
 } from "@/lib/api";
 import { MathText } from "@/lib/math";
 
-type Stage = "select" | "loading" | "test" | "result";
+type Stage = "select" | "loading" | "test" | "result" | "lesson";
 
 const DIFF: Record<string, { label: string; cls: string }> = {
   easy: { label: "Хялбар", cls: "bg-green-100 text-green-700" },
@@ -70,6 +79,66 @@ export function StudentAITutor() {
     toast.error("Хуулж тавихыг хориглосон — гараар бичнэ үү");
   };
   const prevent = (e: React.SyntheticEvent) => e.preventDefault();
+
+  // ── F3 · Хичээл ──
+  const [lesson, setLesson] = useState<AiLesson | null>(null);
+  const [lessonLoading, setLessonLoading] = useState(false);
+  const [practiceAns, setPracticeAns] = useState<Record<string, number>>({});
+  const [practiceResult, setPracticeResult] = useState<PracticeResult | null>(null);
+
+  async function openLesson(topicId: number) {
+    setStage("lesson");
+    setLesson(null);
+    setLessonLoading(true);
+    setPracticeAns({});
+    setPracticeResult(null);
+    try {
+      setLesson(await aiApi.lesson(topicId));
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Хичээл ачаалж чадсангүй");
+      setStage("result");
+    } finally {
+      setLessonLoading(false);
+    }
+  }
+
+  async function checkPractice() {
+    if (!lesson) return;
+    const missing = lesson.practice.filter((p) => practiceAns[p.id] === undefined);
+    if (missing.length) {
+      toast.error(`${missing.length} дадлага хариулаагүй байна`);
+      return;
+    }
+    try {
+      setPracticeResult(await aiApi.practiceCheck(lesson.topic_id, practiceAns));
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Шалгаж чадсангүй");
+    }
+  }
+
+  // ── F2 · Ахиц ба түүх ──
+  const [progress, setProgress] = useState<AiProgress | null>(null);
+  const [hist, setHist] = useState<AssessmentHistoryItem[]>([]);
+  const [showProgress, setShowProgress] = useState(false);
+
+  useEffect(() => {
+    aiApi.progress().then(setProgress).catch(() => {});
+    aiApi.history().then(setHist).catch(() => {});
+  }, [stage === "select"]);
+
+  async function openPast(id: number) {
+    try {
+      const a = await aiApi.getOne(id);
+      if (a.status !== "scored") {
+        toast.error("Дуусаагүй шалгалт");
+        return;
+      }
+      setAssessment(a);
+      setStage("result");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Нээж чадсангүй");
+    }
+  }
 
   useEffect(() => {
     Promise.all([
@@ -222,6 +291,15 @@ export function StudentAITutor() {
                     style={{ width: `${t.mastery}%` }}
                   />
                 </div>
+                {t.mastery < 60 && (
+                  <button
+                    onClick={() => openLesson(t.topic_id)}
+                    className="mt-1 inline-flex items-center gap-1.5 rounded-lg bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary transition-colors hover:bg-primary/20"
+                  >
+                    <GraduationCap className="h-3.5 w-3.5" />
+                    Энэ сэдвийг үзэх
+                  </button>
+                )}
               </div>
             ))}
           </CardContent>
@@ -335,6 +413,152 @@ export function StudentAITutor() {
             );
           })}
         </div>
+      </div>
+    );
+  }
+
+  // ═══════════ ХИЧЭЭЛ ═══════════
+  if (stage === "lesson") {
+    return (
+      <div className="animate-in-rise space-y-6 p-6">
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="icon-sm" onClick={() => setStage("result")}>
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+            <GraduationCap className="h-6 w-6" />
+          </div>
+          <div>
+            <h1 className="text-xl font-bold text-primary">Хичээл</h1>
+            <p className="text-sm text-muted-foreground">Сул сэдвээ засаж бататга</p>
+          </div>
+        </div>
+
+        {lessonLoading || !lesson ? (
+          <Card>
+            <CardContent className="flex flex-col items-center gap-3 py-20">
+              <Sparkles className="h-10 w-10 animate-pulse text-primary" />
+              <p className="text-sm font-medium text-foreground">AI хичээл бэлдэж байна...</p>
+            </CardContent>
+          </Card>
+        ) : (
+          <>
+            <Card>
+              <CardContent className="space-y-3 p-6">
+                <p className="flex items-center gap-2 font-semibold text-foreground">
+                  <Lightbulb className="h-4 w-4 text-amber" /> Тайлбар
+                </p>
+                <div className="text-sm leading-relaxed text-foreground">
+                  <MathText text={lesson.explanation} />
+                </div>
+                {lesson.key_points.length > 0 && (
+                  <ul className="space-y-1 rounded-lg bg-muted/30 p-3 text-sm">
+                    {lesson.key_points.map((k, i) => (
+                      <li key={i} className="flex gap-2">
+                        <Check className="mt-0.5 h-4 w-4 shrink-0 text-green-600" />
+                        <span><MathText text={k} /></span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </CardContent>
+            </Card>
+
+            {lesson.worked_examples.length > 0 && (
+              <Card>
+                <CardContent className="space-y-4 p-6">
+                  <p className="font-semibold text-foreground">Бодсон жишээ</p>
+                  {lesson.worked_examples.map((ex, i) => (
+                    <div key={i} className="rounded-lg border p-3">
+                      <p className="text-sm font-medium text-foreground">
+                        <MathText text={ex.problem} />
+                      </p>
+                      <ol className="mt-2 space-y-1 text-sm text-muted-foreground">
+                        {ex.solution_steps.map((s, j) => (
+                          <li key={j} className="flex gap-2">
+                            <span className="text-primary">{j + 1}.</span>
+                            <span><MathText text={s} /></span>
+                          </li>
+                        ))}
+                      </ol>
+                      <p className="mt-2 text-sm font-medium text-green-700">
+                        Хариу: <MathText text={ex.answer} />
+                      </p>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            )}
+
+            {lesson.practice.length > 0 && (
+              <Card>
+                <CardContent className="space-y-4 p-6">
+                  <p className="font-semibold text-foreground">Дадлага</p>
+                  {lesson.practice.map((p, i) => {
+                    const res = practiceResult?.results.find((r) => r.id === p.id);
+                    return (
+                      <div key={p.id} className="space-y-2">
+                        <p className="text-sm font-medium text-foreground">
+                          {i + 1}. <MathText text={p.question} />
+                        </p>
+                        <div className="space-y-1.5">
+                          {p.options.map((opt, idx) => {
+                            const picked = practiceAns[p.id] === idx;
+                            let cls = "hover:bg-muted/50";
+                            if (res) {
+                              if (idx === res.correct_index)
+                                cls = "bg-green-50 text-green-800";
+                              else if (idx === res.picked)
+                                cls = "bg-red-50 text-red-700 line-through";
+                              else cls = "text-muted-foreground";
+                            } else if (picked) {
+                              cls = "border-primary bg-primary/5 text-primary";
+                            }
+                            return (
+                              <button
+                                key={idx}
+                                disabled={!!practiceResult}
+                                onClick={() =>
+                                  setPracticeAns((a) => ({ ...a, [p.id]: idx }))
+                                }
+                                className={`flex w-full items-center gap-2 rounded-lg border p-2 text-left text-sm transition-colors ${cls}`}
+                              >
+                                <span className="text-xs">
+                                  {String.fromCharCode(65 + idx)}.
+                                </span>
+                                <MathText text={opt} />
+                              </button>
+                            );
+                          })}
+                        </div>
+                        {res?.explanation && (
+                          <p className="text-xs text-muted-foreground">
+                            💡 <MathText text={res.explanation} />
+                          </p>
+                        )}
+                      </div>
+                    );
+                  })}
+                  {practiceResult ? (
+                    <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-primary/5 p-3">
+                      <span className="text-sm font-medium text-primary">
+                        Дадлага: {practiceResult.correct}/{practiceResult.total} (
+                        {practiceResult.percentage}%)
+                      </span>
+                      <Button variant="outline" size="sm" onClick={() => setStage("result")}>
+                        Үр дүн рүү буцах
+                      </Button>
+                    </div>
+                  ) : (
+                    <Button variant="amber" className="w-full" onClick={checkPractice}>
+                      Дадлага шалгах
+                    </Button>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+          </>
+        )}
       </div>
     );
   }
@@ -470,6 +694,91 @@ export function StudentAITutor() {
             AI одоогоор тохируулагдаагүй байна (GEMINI_API_KEY). Админтай холбогдоно уу.
           </p>
         </div>
+      )}
+
+      {progress && progress.total_assessments > 0 && (
+        <Card>
+          <CardContent className="p-4">
+            <button
+              onClick={() => setShowProgress((v) => !v)}
+              className="flex w-full items-center justify-between gap-2"
+            >
+              <span className="flex flex-wrap items-center gap-2 text-sm font-semibold text-foreground">
+                <TrendingUp className="h-4 w-4 text-primary" />
+                Миний ахиц ба түүх
+                <span className="text-xs font-normal text-muted-foreground">
+                  ({progress.total_assessments} шалгалт · дундаж {progress.avg_score}%)
+                </span>
+              </span>
+              <ChevronDown
+                className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${showProgress ? "rotate-180" : ""}`}
+              />
+            </button>
+            {showProgress && (
+              <div className="mt-4 space-y-4">
+                {progress.topics.length > 0 && (
+                  <div className="space-y-2">
+                    <p className="text-xs font-medium text-muted-foreground">
+                      Сэдвийн эзэмшилт (сулаас нь)
+                    </p>
+                    {progress.topics.slice(0, 6).map((t) => (
+                      <div key={t.topic_id} className="space-y-1">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-foreground">{t.title}</span>
+                          <span className="flex items-center gap-1 text-muted-foreground">
+                            {t.mastery}%
+                            {t.trend > 0 && (
+                              <span className="text-green-600">↑{t.trend}</span>
+                            )}
+                            {t.trend < 0 && (
+                              <span className="text-red-600">↓{Math.abs(t.trend)}</span>
+                            )}
+                          </span>
+                        </div>
+                        <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                          <div
+                            className={`h-full rounded-full ${t.mastery >= 80 ? "bg-green-500" : t.mastery >= 50 ? "bg-amber-500" : "bg-red-500"}`}
+                            style={{ width: `${t.mastery}%` }}
+                          />
+                        </div>
+                        {t.mastery < 60 && (
+                          <button
+                            onClick={() => openLesson(t.topic_id)}
+                            className="text-[11px] font-medium text-primary hover:underline"
+                          >
+                            → хичээл үзэх
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {hist.length > 0 && (
+                  <div className="space-y-1.5">
+                    <p className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                      <History className="h-3.5 w-3.5" /> Сүүлийн шалгалтууд
+                    </p>
+                    {hist.slice(0, 5).map((h) => (
+                      <button
+                        key={h.id}
+                        onClick={() => h.status === "scored" && openPast(h.id)}
+                        className="flex w-full items-center justify-between rounded-lg border p-2 text-left text-xs hover:bg-muted/50"
+                      >
+                        <span className="text-muted-foreground">
+                          {new Date(h.created_at).toLocaleDateString("mn-MN")} ·{" "}
+                          {h.question_count} асуулт
+                        </span>
+                        <span className="font-medium text-foreground">
+                          {h.status === "scored" ? `${h.score}%` : "дуусаагүй"}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
       )}
 
       <Card>

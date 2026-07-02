@@ -1113,4 +1113,76 @@ export const aiApi = {
     api.post<AiAssessment>(`/ai/assessment/${id}/submit`, { answers, integrity }),
   getOne: (id: number) => api.get<AiAssessment>(`/ai/assessment/${id}`),
   history: () => api.get<AssessmentHistoryItem[]>("/ai/assessment/history"),
+  progress: () => api.get<AiProgress>("/ai/progress"),
+  lesson: (topic_id: number) => api.post<AiLesson>("/ai/lesson", { topic_id }),
+  practiceCheck: (topic_id: number, answers: Record<string, number>) =>
+    api.post<PracticeResult>("/ai/lesson/practice-check", { topic_id, answers }),
+  reviews: () => api.get<ReviewItem[]>("/ai/reviews"),
+  overrideReview: (
+    assessmentId: number,
+    questionId: string,
+    score: number,
+    feedback?: string,
+  ) =>
+    api.patch<{ ok: boolean }>(`/ai/reviews/${assessmentId}/${questionId}`, {
+      score,
+      feedback,
+    }),
 };
+
+// ─────────────── AI хичээл / ахиц / багшийн шалгалт ───────────────
+export interface LessonExample {
+  problem: string;
+  solution_steps: string[];
+  answer: string;
+}
+export interface LessonPractice {
+  id: string;
+  question: string;
+  options: string[];
+  difficulty: string;
+}
+export interface AiLesson {
+  topic_id: number;
+  explanation: string;
+  key_points: string[];
+  worked_examples: LessonExample[];
+  practice: LessonPractice[];
+}
+export interface PracticeResult {
+  correct: number;
+  total: number;
+  percentage: number;
+  results: {
+    id: string;
+    correct: boolean;
+    picked?: number;
+    correct_index: number;
+    explanation: string;
+  }[];
+}
+export interface ProgressTopic {
+  topic_id: number;
+  title: string;
+  mastery: number;
+  attempts: number;
+  trend: number;
+  last_seen: string;
+}
+export interface AiProgress {
+  total_assessments: number;
+  avg_score: number;
+  topics: ProgressTopic[];
+}
+export interface ReviewItem {
+  assessment_id: number;
+  student_id: number;
+  question_id: string;
+  topic_title: string;
+  question: string;
+  correct_answer: string | null;
+  student_answer: string;
+  ai_score: number;
+  ai_feedback: string;
+  created_at: string;
+}
