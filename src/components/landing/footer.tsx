@@ -66,8 +66,8 @@ export function Footer() {
             © 2026 EduConnect Mongolia. Бүх эрх хуулиар хамгаалагдсан.
           </p>
           <div className="flex gap-6 text-xs">
-            <a href="#" className="text-muted-foreground hover:text-foreground transition-colors">Нууцлалын бодлого</a>
-            <a href="#" className="text-muted-foreground hover:text-foreground transition-colors">Үйлчилгээний нөхцөл</a>
+            <a href="/privacy" className="text-muted-foreground hover:text-foreground transition-colors">Нууцлалын бодлого</a>
+            <a href="/terms" className="text-muted-foreground hover:text-foreground transition-colors">Үйлчилгээний нөхцөл</a>
           </div>
         </div>
       </div>

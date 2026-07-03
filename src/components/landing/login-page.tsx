@@ -74,6 +74,10 @@ const LEFT_PANEL_FEATURES = [
   "SMS мэдэгдэл + ESIS синк",
 ];
 
+// Туршилтын хурдан нэвтрэлт — зөвхөн dev/demo орчинд.
+// Production-д NEXT_PUBLIC_ENABLE_DEMO=true биш бол харагдахгүй (аюулгүй байдал).
+const DEMO_ENABLED = process.env.NEXT_PUBLIC_ENABLE_DEMO === "true";
+
 export function LoginPage({ onBack, onSuccess, onRegister }: LoginPageProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -186,47 +190,50 @@ export function LoginPage({ onBack, onSuccess, onRegister }: LoginPageProps) {
             </p>
           </div>
 
-          {/* Demo accounts */}
-          <div>
-            <Label className="text-xs text-muted-foreground">
-              Туршилтын бүртгэлээр нэвтрэх (нууц үг: password)
-            </Label>
-            <div className="mt-2 grid grid-cols-2 gap-2">
-              {DEMO_ACCOUNTS.map((acc) => {
-                const Icon = acc.icon;
-                const isSelected = selectedRole === acc.label;
-                return (
-                  <button
-                    key={acc.email}
-                    type="button"
-                    onClick={() => selectDemo(acc)}
-                    disabled={loading}
-                    className={`flex flex-col items-start gap-1 rounded-lg border p-3 text-left transition-all hover:border-primary/50 hover:shadow-sm ${
-                      isSelected ? "border-primary bg-primary/5" : "border-border"
-                    }`}
-                  >
-                    <div className={`flex h-8 w-8 items-center justify-center rounded-md ${acc.color} text-white`}>
-                      <Icon className="h-4 w-4" />
-                    </div>
-                    <div>
-                      <div className="text-sm font-medium">{acc.label}</div>
-                      <div className="text-xs text-muted-foreground">{acc.desc}</div>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+          {/* Demo accounts — зөвхөн dev/demo орчинд */}
+          {DEMO_ENABLED && (
+            <>
+              <div>
+                <Label className="text-xs text-muted-foreground">
+                  Туршилтын бүртгэлээр нэвтрэх
+                </Label>
+                <div className="mt-2 grid grid-cols-2 gap-2">
+                  {DEMO_ACCOUNTS.map((acc) => {
+                    const Icon = acc.icon;
+                    const isSelected = selectedRole === acc.label;
+                    return (
+                      <button
+                        key={acc.email}
+                        type="button"
+                        onClick={() => selectDemo(acc)}
+                        disabled={loading}
+                        className={`flex flex-col items-start gap-1 rounded-lg border p-3 text-left transition-all hover:border-primary/50 hover:shadow-sm ${
+                          isSelected ? "border-primary bg-primary/5" : "border-border"
+                        }`}
+                      >
+                        <div className={`flex h-8 w-8 items-center justify-center rounded-md ${acc.color} text-white`}>
+                          <Icon className="h-4 w-4" />
+                        </div>
+                        <div>
+                          <div className="text-sm font-medium">{acc.label}</div>
+                          <div className="text-xs text-muted-foreground">{acc.desc}</div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
 
-          {/* Divider */}
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background px-2 text-muted-foreground">эсвэл</span>
-            </div>
-          </div>
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-background px-2 text-muted-foreground">эсвэл</span>
+                </div>
+              </div>
+            </>
+          )}
 
           {/* Login form */}
           <form onSubmit={handleSubmit} className="space-y-4">

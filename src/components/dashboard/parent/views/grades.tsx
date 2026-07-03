@@ -35,7 +35,7 @@ export function ParentGrades() {
           if (gradeList.status === "fulfilled") setGrades(gradeList.value);
         }
       } catch {
-        // handled
+       
       } finally {
         setLoading(false);
       }

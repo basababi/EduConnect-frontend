@@ -42,7 +42,7 @@ interface Props {
   onNavigate: (view: ParentView) => void;
 }
 
-// Бодит дата дээр тулгуурласан эрсдэлийн оноо (хуурамч AI биш)
+
 function computeRisk(att: number, avg: number, low: number, over: number): number {
   let s = 0;
   if (att < 90) s += 15;
@@ -139,7 +139,7 @@ export function ParentOverview({ user, onNavigate }: Props) {
   const unreadMessages = conversations.reduce((sum, c) => sum + c.unread_count, 0);
   const activeAssignments = assignments.filter((a) => a.status === "active");
 
-  // Зөвхөн БОДИТ дата байгаа үед л үнэлгээ хийнэ (хоосон үед 0% = муу гэж буруу тооцохгүй)
+  
   const hasGrades = (gradeAvg?.total_grades ?? 0) > 0;
   const hasAttendance = (attendance?.total_records ?? 0) > 0;
   const hasData = hasGrades || hasAttendance;

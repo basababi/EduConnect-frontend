@@ -1016,7 +1016,6 @@ export function StudentAITutor() {
               <span className="text-sm text-muted-foreground">
                 Асуултын тоо
                 <span className="block text-[11px] text-muted-foreground/70">
-                  +2–3 бичих асуулт
                 </span>
               </span>
               <div className="flex flex-wrap gap-1.5">
@@ -1039,7 +1038,7 @@ export function StudentAITutor() {
               <span className="text-sm text-muted-foreground">
                 Хүндрэл
                 <span className="block text-[11px] text-muted-foreground/70">
-                  Авто = түвшинд тохируулна
+            
                 </span>
               </span>
               <div className="flex flex-wrap gap-1.5">
