@@ -1260,3 +1260,75 @@ export interface ReviewItem {
   ai_feedback: string;
   created_at: string;
 }
+
+// ─────────────── Career (Карьер Зөвлөгөө) ───────────────
+export interface RiasecVector {
+  R: number;
+  I: number;
+  A: number;
+  S: number;
+  E: number;
+  C: number;
+}
+
+export interface CareerItem {
+  id: number;
+  name: string;
+  category: string;
+  riasec: RiasecVector;
+  description: string;
+  day_in_life: string | null;
+  eyesh_subjects: { subject: string; min_score: number }[] | null;
+  salary_range: string | null;
+  demand_score: number;
+  demand_trend: string;
+  is_lesser_known: boolean;
+}
+
+export interface CareerQuestionnaire {
+  likert: string[];
+  items: { id: string; text: string }[];
+}
+
+export interface CareerProfileRes {
+  has_profile: boolean;
+  riasec: RiasecVector | null;
+  updated_at: string | null;
+  academic: { subject: string; avg: number }[];
+}
+
+export interface CareerRecommendationItem {
+  career_id: number;
+  match: number;
+  interest: number;
+  academic: number;
+  demand: number;
+  career: CareerItem;
+}
+
+export interface CareerRecommendations {
+  riasec: RiasecVector;
+  narrative: string | null;
+  created_at: string;
+  items: CareerRecommendationItem[];
+}
+
+export interface CareerDiscover {
+  week_pick: CareerItem | null;
+  suggestions: CareerItem[];
+}
+
+export const careerApi = {
+  questionnaire: () => api.get<CareerQuestionnaire>("/careers/questionnaire"),
+  submit: (answers: Record<string, number>) =>
+    api.post<CareerProfileRes>("/careers/questionnaire", { answers }),
+  profile: () => api.get<CareerProfileRes>("/careers/profile"),
+  recommendations: () =>
+    api.get<CareerRecommendations>("/careers/recommendations"),
+  discover: () => api.get<CareerDiscover>("/careers/discover"),
+  list: (category?: string) =>
+    api.get<CareerItem[]>(
+      `/careers${category ? `?category=${encodeURIComponent(category)}` : ""}`,
+    ),
+  get: (id: number) => api.get<CareerItem>(`/careers/${id}`),
+};
