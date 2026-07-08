@@ -1318,6 +1318,11 @@ export interface CareerDiscover {
   suggestions: CareerItem[];
 }
 
+export interface CoachMessage {
+  role: "user" | "assistant";
+  content: string;
+}
+
 export const careerApi = {
   questionnaire: () => api.get<CareerQuestionnaire>("/careers/questionnaire"),
   submit: (answers: Record<string, number>) =>
@@ -1326,6 +1331,8 @@ export const careerApi = {
   recommendations: () =>
     api.get<CareerRecommendations>("/careers/recommendations"),
   discover: () => api.get<CareerDiscover>("/careers/discover"),
+  coach: (messages: CoachMessage[]) =>
+    api.post<{ reply: string }>("/careers/coach", { messages }),
   list: (category?: string) =>
     api.get<CareerItem[]>(
       `/careers${category ? `?category=${encodeURIComponent(category)}` : ""}`,

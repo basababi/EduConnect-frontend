@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -19,6 +19,10 @@ import {
   ChevronLeft,
   ChevronRight,
   Target,
+  MessageSquareText,
+  Send,
+  Loader2,
+  Bot,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -28,6 +32,7 @@ import {
   type CareerDiscover,
   type CareerItem,
   type RiasecVector,
+  type CoachMessage,
 } from "@/lib/api";
 
 type Stage = "loading" | "intro" | "quiz" | "scoring" | "results";
@@ -49,6 +54,155 @@ function TrendIcon({ trend }: { trend: string }) {
   return <Minus className="h-3.5 w-3.5 text-muted-foreground" />;
 }
 
+const COACH_SUGGESTIONS = [
+  "Миний дүнгээр ямар мэргэжил тохирох вэ?",
+  "Юугаа сайжруулах хэрэгтэй вэ?",
+  "Их сургуульд бэлдэхэд юунаас эхлэх вэ?",
+];
+
+/** Карьерын зөвлөхтэй чат — сурагчийн бодит дүн/профайлд тулгуурлана */
+function CoachChat() {
+  const [messages, setMessages] = useState<CoachMessage[]>([]);
+  const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    scrollRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, loading]);
+
+  async function send(text: string = input) {
+    const msg = text.trim();
+    if (!msg || loading) return;
+    setInput("");
+    const next: CoachMessage[] = [...messages, { role: "user", content: msg }];
+    setMessages(next);
+    setLoading(true);
+    try {
+      const { reply } = await careerApi.coach(next);
+      setMessages((prev) => [...prev, { role: "assistant", content: reply }]);
+    } catch (e) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content:
+            e instanceof Error ? e.message : "Алдаа гарлаа. Дахин оролдоно уу.",
+        },
+      ]);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function onKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      send();
+    }
+  }
+
+  return (
+    <div className="flex h-[62vh] flex-col overflow-hidden rounded-2xl border border-border bg-card">
+      {/* Messages */}
+      <div className="flex-1 space-y-3 overflow-y-auto p-4">
+        {messages.length === 0 && (
+          <div className="space-y-2.5">
+            <div className="rounded-2xl border border-border bg-muted/40 p-4">
+              <div className="mb-1 flex items-start gap-2">
+                <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-amber" />
+                <p className="text-sm font-semibold text-foreground">
+                  Сайн уу! Би чиний карьерын зөвлөх.
+                </p>
+              </div>
+              <p className="pl-6 text-xs text-muted-foreground">
+                Чиний сонирхол, бодит хичээлийн дүнд тулгуурлан мэргэжил сонгох,
+                юугаа сайжруулахад чинь тусална. Асуултаа бич.
+              </p>
+            </div>
+            {COACH_SUGGESTIONS.map((s) => (
+              <button
+                key={s}
+                onClick={() => send(s)}
+                className="block w-full rounded-xl border border-border bg-card px-4 py-2.5 text-left text-sm text-foreground transition hover:border-primary/30 hover:bg-muted/40"
+              >
+                {s}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {messages.map((m, i) => (
+          <div
+            key={i}
+            className={`flex items-end gap-2 ${m.role === "user" ? "justify-end" : "justify-start"}`}
+          >
+            {m.role === "assistant" && (
+              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10">
+                <Bot className="h-3.5 w-3.5 text-primary" />
+              </div>
+            )}
+            <div
+              className={`max-w-[80%] whitespace-pre-wrap rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
+                m.role === "user"
+                  ? "rounded-br-sm bg-primary text-primary-foreground"
+                  : "rounded-bl-sm border border-border bg-muted/50 text-foreground"
+              }`}
+            >
+              {m.content}
+            </div>
+          </div>
+        ))}
+
+        {loading && (
+          <div className="flex items-end gap-2">
+            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10">
+              <Bot className="h-3.5 w-3.5 text-primary" />
+            </div>
+            <div className="rounded-2xl rounded-bl-sm border border-border bg-muted/50 px-4 py-3">
+              <span className="inline-flex items-center gap-1">
+                <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-muted-foreground [animation-delay:0ms]" />
+                <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-muted-foreground [animation-delay:150ms]" />
+                <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-muted-foreground [animation-delay:300ms]" />
+              </span>
+            </div>
+          </div>
+        )}
+        <div ref={scrollRef} />
+      </div>
+
+      {/* Input */}
+      <div className="shrink-0 border-t border-border bg-card/60 p-3">
+        <div className="flex items-end gap-2">
+          <textarea
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={onKeyDown}
+            placeholder="Асуултаа бич..."
+            className="max-h-32 min-h-[44px] flex-1 resize-none rounded-xl border border-input bg-background px-4 py-2.5 text-sm text-foreground outline-none placeholder:text-muted-foreground focus:border-primary/50 focus:ring-2 focus:ring-primary/10 disabled:opacity-50"
+            rows={1}
+            disabled={loading}
+          />
+          <button
+            onClick={() => send()}
+            disabled={loading || !input.trim()}
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground transition hover:opacity-90 disabled:opacity-40"
+          >
+            {loading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Send className="h-4 w-4" />
+            )}
+          </button>
+        </div>
+        <p className="mt-2 text-center text-[11px] text-muted-foreground">
+          Зөвлөх — чиглүүлэгч, шийдвэр биш. Бодит дүнд тулгуурлана.
+        </p>
+      </div>
+    </div>
+  );
+}
+
 export function StudentCareer() {
   const [stage, setStage] = useState<Stage>("loading");
   const [quiz, setQuiz] = useState<CareerQuestionnaire | null>(null);
@@ -57,6 +211,7 @@ export function StudentCareer() {
   const [recs, setRecs] = useState<CareerRecommendations | null>(null);
   const [discover, setDiscover] = useState<CareerDiscover | null>(null);
   const [detail, setDetail] = useState<CareerItem | null>(null);
+  const [tab, setTab] = useState<"guide" | "coach">("guide");
 
   useEffect(() => {
     careerApi
@@ -307,6 +462,36 @@ export function StudentCareer() {
           </Button>
         </div>
 
+        {/* Таб сонголт */}
+        <div className="flex gap-1 rounded-xl border bg-muted/40 p-1">
+          <button
+            onClick={() => setTab("guide")}
+            className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+              tab === "guide"
+                ? "bg-background text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Compass className="h-4 w-4" />
+            Миний чиглэл
+          </button>
+          <button
+            onClick={() => setTab("coach")}
+            className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+              tab === "coach"
+                ? "bg-background text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <MessageSquareText className="h-4 w-4" />
+            Зөвлөхтэй чатлах
+          </button>
+        </div>
+
+        {tab === "coach" ? (
+          <CoachChat />
+        ) : (
+        <div className="space-y-6">
         {/* Сонирхлын профайл */}
         <Card>
           <CardContent className="space-y-3 p-6">
@@ -454,6 +639,8 @@ export function StudentCareer() {
               )}
             </CardContent>
           </Card>
+        )}
+        </div>
         )}
       </div>
     );
