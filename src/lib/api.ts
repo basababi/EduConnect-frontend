@@ -1323,6 +1323,29 @@ export interface CoachMessage {
   content: string;
 }
 
+export interface SchoolMatchItem {
+  id: number;
+  university: string;
+  program: string;
+  city: string;
+  ownership: "state" | "private";
+  field: string | null;
+  tuition_range: string | null;
+  cutoff_score: number;
+  your_score: number;
+  gap: number;
+  related: boolean;
+}
+
+export interface SchoolMatches {
+  subjects: string[];
+  scores: Record<string, number>;
+  has_scores: boolean;
+  safety: SchoolMatchItem[];
+  match: SchoolMatchItem[];
+  reach: SchoolMatchItem[];
+}
+
 export const careerApi = {
   questionnaire: () => api.get<CareerQuestionnaire>("/careers/questionnaire"),
   submit: (answers: Record<string, number>) =>
@@ -1331,8 +1354,18 @@ export const careerApi = {
   recommendations: () =>
     api.get<CareerRecommendations>("/careers/recommendations"),
   discover: () => api.get<CareerDiscover>("/careers/discover"),
-  coach: (messages: CoachMessage[]) =>
-    api.post<{ reply: string }>("/careers/coach", { messages }),
+  // Зөвлөхтэй чат (сервер тал түүх хадгална)
+  coachHistory: () =>
+    api.get<{ messages: CoachMessage[] }>("/careers/coach"),
+  coach: (message: string) =>
+    api.post<{ reply: string; messages: CoachMessage[] }>("/careers/coach", {
+      message,
+    }),
+  coachClear: () => api.delete<{ messages: CoachMessage[] }>("/careers/coach"),
+  // ЭЕШ → сургууль
+  schools: () => api.get<SchoolMatches>("/careers/schools"),
+  saveEyesh: (scores: Record<string, number>) =>
+    api.post<SchoolMatches>("/careers/eyesh", { scores }),
   list: (category?: string) =>
     api.get<CareerItem[]>(
       `/careers${category ? `?category=${encodeURIComponent(category)}` : ""}`,

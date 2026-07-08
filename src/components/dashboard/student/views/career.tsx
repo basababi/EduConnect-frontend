@@ -23,6 +23,9 @@ import {
   Send,
   Loader2,
   Bot,
+  Building2,
+  MapPin,
+  School,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -33,6 +36,8 @@ import {
   type CareerItem,
   type RiasecVector,
   type CoachMessage,
+  type SchoolMatches,
+  type SchoolMatchItem,
 } from "@/lib/api";
 
 type Stage = "loading" | "intro" | "quiz" | "scoring" | "results";
@@ -60,12 +65,230 @@ const COACH_SUGGESTIONS = [
   "Их сургуульд бэлдэхэд юунаас эхлэх вэ?",
 ];
 
+const BAND_TONE = {
+  green: {
+    border: "border-l-green-500",
+    badge: "bg-green-100 text-green-700",
+  },
+  blue: {
+    border: "border-l-blue-500",
+    badge: "bg-blue-100 text-blue-700",
+  },
+  amber: {
+    border: "border-l-amber-500",
+    badge: "bg-amber-100 text-amber-700",
+  },
+} as const;
+
+type Tone = keyof typeof BAND_TONE;
+
+function SchoolCard({ it, tone }: { it: SchoolMatchItem; tone: Tone }) {
+  const gapTxt = it.gap > 0 ? `+${it.gap}` : `${it.gap}`;
+  return (
+    <div
+      className={`rounded-lg border border-l-4 bg-card p-3.5 ${BAND_TONE[tone].border}`}
+    >
+      <div className="flex flex-wrap items-center gap-2">
+        <Building2 className="h-4 w-4 shrink-0 text-muted-foreground" />
+        <p className="font-semibold text-foreground">{it.university}</p>
+        <span className="text-sm text-muted-foreground">· {it.program}</span>
+        {it.related && (
+          <Badge className="bg-primary/10 text-[10px] text-primary" variant="secondary">
+            Сонирхолд ойр
+          </Badge>
+        )}
+      </div>
+      <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+        <span className="inline-flex items-center gap-1">
+          <MapPin className="h-3 w-3" />
+          {it.city}
+        </span>
+        <Badge variant="secondary" className="text-[10px]">
+          {it.ownership === "state" ? "Төрийн" : "Хувийн"}
+        </Badge>
+        <span>Босго ~{it.cutoff_score}</span>
+        <span className="font-medium text-foreground">Таны оноо {it.your_score}</span>
+        <span
+          className={
+            it.gap >= 0 ? "text-green-600" : "text-amber-600"
+          }
+        >
+          зөрүү {gapTxt}
+        </span>
+        {it.tuition_range && <span>· {it.tuition_range}/жил</span>}
+      </div>
+    </div>
+  );
+}
+
+function SchoolBand({
+  title,
+  subtitle,
+  items,
+  tone,
+}: {
+  title: string;
+  subtitle: string;
+  items: SchoolMatchItem[];
+  tone: Tone;
+}) {
+  return (
+    <div className="space-y-2">
+      <div className="flex flex-wrap items-baseline gap-2">
+        <span
+          className={`rounded-md px-2 py-0.5 text-xs font-semibold ${BAND_TONE[tone].badge}`}
+        >
+          {title}
+        </span>
+        <span className="text-xs text-muted-foreground">
+          {subtitle} · {items.length}
+        </span>
+      </div>
+      {items.length === 0 ? (
+        <p className="text-sm text-muted-foreground">
+          Энэ ангилалд тохирох хөтөлбөр алга.
+        </p>
+      ) : (
+        <div className="space-y-2">
+          {items.map((it) => (
+            <SchoolCard key={it.id} it={it} tone={tone} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** ЭЕШ оноо → орж болох сургууль (reach/match/safety) */
+function SchoolMatch() {
+  const [data, setData] = useState<SchoolMatches | null>(null);
+  const [scores, setScores] = useState<Record<string, string>>({});
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    careerApi
+      .schools()
+      .then((d) => {
+        setData(d);
+        const init: Record<string, string> = {};
+        Object.entries(d.scores).forEach(([k, v]) => (init[k] = String(v)));
+        setScores(init);
+      })
+      .catch(() => setData(null));
+  }, []);
+
+  async function save() {
+    const payload: Record<string, number> = {};
+    Object.entries(scores).forEach(([k, v]) => {
+      const n = Number(v);
+      if (v !== "" && Number.isFinite(n) && n >= 0 && n <= 800) payload[k] = n;
+    });
+    if (Object.keys(payload).length === 0) {
+      toast.error("Дор хаяж нэг хичээлийн оноо оруулна уу");
+      return;
+    }
+    setSaving(true);
+    try {
+      const d = await careerApi.saveEyesh(payload);
+      setData(d);
+      toast.success("Тохирол шинэчлэгдлээ");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Алдаа гарлаа");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (!data) return <Skeleton className="h-64 w-full rounded-xl" />;
+
+  return (
+    <div className="space-y-5">
+      {/* ЭЕШ оноо оруулах */}
+      <Card>
+        <CardContent className="space-y-4 p-5">
+          <div>
+            <p className="flex items-center gap-2 font-semibold text-foreground">
+              <School className="h-4 w-4 text-primary" />
+              ЭЕШ оноогоо оруул
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Авсан эсвэл зорилтот оноогоо бич (0–800). Аль болох 2-3 хичээл.
+            </p>
+          </div>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            {data.subjects.map((s) => (
+              <div key={s} className="space-y-1">
+                <label className="text-xs text-muted-foreground">{s}</label>
+                <input
+                  type="number"
+                  min={0}
+                  max={800}
+                  inputMode="numeric"
+                  value={scores[s] ?? ""}
+                  onChange={(e) =>
+                    setScores((p) => ({ ...p, [s]: e.target.value }))
+                  }
+                  placeholder="0-800"
+                  className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/10"
+                />
+              </div>
+            ))}
+          </div>
+          <Button variant="amber" onClick={save} disabled={saving} className="gap-2">
+            {saving ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Target className="h-4 w-4" />
+            )}
+            Тохирох сургууль харах
+          </Button>
+        </CardContent>
+      </Card>
+
+      {data.has_scores && (
+        <>
+          <SchoolBand
+            title="Боломжтой"
+            subtitle="Оноо чинь босготой ойролцоо"
+            items={data.match}
+            tone="blue"
+          />
+          <SchoolBand
+            title="Найдвартай"
+            subtitle="Оноо чинь босгоос давсан"
+            items={data.safety}
+            tone="green"
+          />
+          <SchoolBand
+            title="Зорилтот"
+            subtitle="Хүрч болох — чармайлт шаардана"
+            items={data.reach}
+            tone="amber"
+          />
+          <p className="text-center text-[11px] text-muted-foreground">
+            Босго оноо нь өмнөх жилүүдийн баримжаа — албан ёсны биш, жил бүр
+            өөрчлөгдөнө. Эцсийн мэдээллийг сургуулиас шалгаарай.
+          </p>
+        </>
+      )}
+    </div>
+  );
+}
+
 /** Карьерын зөвлөхтэй чат — сурагчийн бодит дүн/профайлд тулгуурлана */
 function CoachChat() {
   const [messages, setMessages] = useState<CoachMessage[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Хадгалсан түүхийг ачаална (refresh хийхэд алдагдахгүй)
+  useEffect(() => {
+    careerApi
+      .coachHistory()
+      .then((r) => setMessages(r.messages))
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     scrollRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -75,12 +298,11 @@ function CoachChat() {
     const msg = text.trim();
     if (!msg || loading) return;
     setInput("");
-    const next: CoachMessage[] = [...messages, { role: "user", content: msg }];
-    setMessages(next);
+    setMessages((prev) => [...prev, { role: "user", content: msg }]);
     setLoading(true);
     try {
-      const { reply } = await careerApi.coach(next);
-      setMessages((prev) => [...prev, { role: "assistant", content: reply }]);
+      const res = await careerApi.coach(msg);
+      setMessages(res.messages); // серверийн эрх бүхий түүх
     } catch (e) {
       setMessages((prev) => [
         ...prev,
@@ -95,6 +317,15 @@ function CoachChat() {
     }
   }
 
+  async function clearChat() {
+    try {
+      await careerApi.coachClear();
+      setMessages([]);
+    } catch {
+      /* үл ойшоох */
+    }
+  }
+
   function onKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -104,6 +335,22 @@ function CoachChat() {
 
   return (
     <div className="flex h-[62vh] flex-col overflow-hidden rounded-2xl border border-border bg-card">
+      {/* Header */}
+      <div className="flex shrink-0 items-center justify-between border-b border-border bg-card/60 px-4 py-2.5">
+        <p className="flex items-center gap-2 text-sm font-semibold text-foreground">
+          <Bot className="h-4 w-4 text-primary" />
+          Карьерын зөвлөх
+        </p>
+        {messages.length > 0 && (
+          <button
+            onClick={clearChat}
+            className="text-xs text-muted-foreground transition hover:text-foreground"
+          >
+            Цэвэрлэх
+          </button>
+        )}
+      </div>
+
       {/* Messages */}
       <div className="flex-1 space-y-3 overflow-y-auto p-4">
         {messages.length === 0 && (
@@ -211,7 +458,7 @@ export function StudentCareer() {
   const [recs, setRecs] = useState<CareerRecommendations | null>(null);
   const [discover, setDiscover] = useState<CareerDiscover | null>(null);
   const [detail, setDetail] = useState<CareerItem | null>(null);
-  const [tab, setTab] = useState<"guide" | "coach">("guide");
+  const [tab, setTab] = useState<"guide" | "schools" | "coach">("guide");
 
   useEffect(() => {
     careerApi
@@ -464,32 +711,33 @@ export function StudentCareer() {
 
         {/* Таб сонголт */}
         <div className="flex gap-1 rounded-xl border bg-muted/40 p-1">
-          <button
-            onClick={() => setTab("guide")}
-            className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-              tab === "guide"
-                ? "bg-background text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            <Compass className="h-4 w-4" />
-            Миний чиглэл
-          </button>
-          <button
-            onClick={() => setTab("coach")}
-            className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-              tab === "coach"
-                ? "bg-background text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            <MessageSquareText className="h-4 w-4" />
-            Зөвлөхтэй чатлах
-          </button>
+          {[
+            { id: "guide" as const, icon: Compass, label: "Чиглэл" },
+            { id: "schools" as const, icon: School, label: "Сургууль" },
+            { id: "coach" as const, icon: MessageSquareText, label: "Зөвлөх" },
+          ].map((t) => {
+            const Icon = t.icon;
+            return (
+              <button
+                key={t.id}
+                onClick={() => setTab(t.id)}
+                className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg px-2 py-2 text-sm font-medium transition-colors ${
+                  tab === t.id
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <Icon className="h-4 w-4" />
+                {t.label}
+              </button>
+            );
+          })}
         </div>
 
         {tab === "coach" ? (
           <CoachChat />
+        ) : tab === "schools" ? (
+          <SchoolMatch />
         ) : (
         <div className="space-y-6">
         {/* Сонирхлын профайл */}
