@@ -160,7 +160,9 @@ export default function Home() {
           )}
           {studentView === "ai-tutor" && <StudentAITutor />}
           {studentView === "ai-chat" && <StudentAIChat />}
-          {studentView === "career" && <StudentCareer />}
+          {studentView === "career" && (
+            <StudentCareer onNavigate={setStudentView} />
+          )}
           {studentView === "schedule" && <StudentSchedule />}
           {studentView === "submissions" && <StudentSubmissions />}
           {studentView === "materials" && <StudentMaterials />}

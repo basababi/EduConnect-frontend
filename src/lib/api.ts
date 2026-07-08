@@ -1346,8 +1346,15 @@ export interface SchoolMatches {
   reach: SchoolMatchItem[];
 }
 
+export interface FocusArea {
+  subject: string;
+  avg: number;
+  needed_for: string[];
+}
+
 export const careerApi = {
   questionnaire: () => api.get<CareerQuestionnaire>("/careers/questionnaire"),
+  focus: () => api.get<{ areas: FocusArea[] }>("/careers/focus"),
   submit: (answers: Record<string, number>) =>
     api.post<CareerProfileRes>("/careers/questionnaire", { answers }),
   profile: () => api.get<CareerProfileRes>("/careers/profile"),

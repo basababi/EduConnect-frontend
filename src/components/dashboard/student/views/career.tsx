@@ -26,6 +26,7 @@ import {
   Building2,
   MapPin,
   School,
+  BookOpen,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -38,7 +39,9 @@ import {
   type CoachMessage,
   type SchoolMatches,
   type SchoolMatchItem,
+  type FocusArea,
 } from "@/lib/api";
+import type { StudentView } from "@/components/dashboard/student/student-shell";
 
 type Stage = "loading" | "intro" | "quiz" | "scoring" | "results";
 
@@ -450,13 +453,18 @@ function CoachChat() {
   );
 }
 
-export function StudentCareer() {
+export function StudentCareer({
+  onNavigate,
+}: {
+  onNavigate?: (view: StudentView) => void;
+}) {
   const [stage, setStage] = useState<Stage>("loading");
   const [quiz, setQuiz] = useState<CareerQuestionnaire | null>(null);
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [page, setPage] = useState(0);
   const [recs, setRecs] = useState<CareerRecommendations | null>(null);
   const [discover, setDiscover] = useState<CareerDiscover | null>(null);
+  const [focus, setFocus] = useState<FocusArea[]>([]);
   const [detail, setDetail] = useState<CareerItem | null>(null);
   const [tab, setTab] = useState<"guide" | "schools" | "coach">("guide");
 
@@ -475,12 +483,14 @@ export function StudentCareer() {
 
   async function loadResults() {
     try {
-      const [r, d] = await Promise.all([
+      const [r, d, f] = await Promise.all([
         careerApi.recommendations(),
         careerApi.discover().catch(() => null),
+        careerApi.focus().catch(() => null),
       ]);
       setRecs(r);
       setDiscover(d);
+      setFocus(f?.areas ?? []);
       setStage("results");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Ачаалж чадсангүй");
@@ -773,6 +783,51 @@ export function StudentCareer() {
                 Зөвлөхийн тайлбар
               </p>
               <p className="text-sm leading-relaxed text-foreground">{recs.narrative}</p>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Сайжруулбал тустай хичээл → AI Tutor (битүү гогцоо) */}
+        {focus.length > 0 && (
+          <Card className="border-amber/40 bg-amber/5">
+            <CardContent className="space-y-3 p-6">
+              <div>
+                <p className="flex items-center gap-2 font-semibold text-foreground">
+                  <Target className="h-4 w-4 text-amber" />
+                  Сайжруулбал тустай хичээл
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Тохирсон мэргэжилд чинь хэрэгтэй, дүн одоогоор сул хичээлүүд:
+                </p>
+              </div>
+              <div className="space-y-2">
+                {focus.map((a) => (
+                  <div
+                    key={a.subject}
+                    className="flex flex-wrap items-center justify-between gap-2 rounded-lg border bg-card p-3"
+                  >
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-foreground">
+                        {a.subject}{" "}
+                        <span className="text-muted-foreground">· {a.avg}%</span>
+                      </p>
+                      <p className="truncate text-xs text-muted-foreground">
+                        {a.needed_for.join(", ")} мэргэжилд хэрэгтэй
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {onNavigate && (
+                <Button
+                  variant="amber"
+                  className="w-full gap-2 sm:w-auto"
+                  onClick={() => onNavigate("ai-tutor")}
+                >
+                  <BookOpen className="h-4 w-4" />
+                  Хичээлийн Дагуулаар дасгах
+                </Button>
+              )}
             </CardContent>
           </Card>
         )}
