@@ -16,10 +16,10 @@ export type ParentView =
 const SECTIONS: ShellNavSection[] = [
   {
     items: [
-      { id: "overview", label: "Нүүр", icon: Home },
-      { id: "attendance", label: "Ирц", icon: CheckSquare },
-      { id: "grades", label: "Дүн", icon: BarChart3 },
-      { id: "messages", label: "Мессеж", icon: MessageSquare },
+      { id: "overview", label: "Нүүр", icon: Home, primary: true },
+      { id: "attendance", label: "Ирц", icon: CheckSquare, primary: true },
+      { id: "grades", label: "Дүн", icon: BarChart3, primary: true },
+      { id: "messages", label: "Мессеж", icon: MessageSquare, primary: true },
       { id: "announcements", label: "Зарлал", icon: Megaphone },
     ],
   },

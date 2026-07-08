@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
-import { GraduationCap, Menu, LogOut, Sparkles } from "lucide-react";
+import { GraduationCap, LogOut, Sparkles, MoreHorizontal } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { authApi, type User } from "@/lib/api";
 import { cn } from "@/lib/utils";
@@ -15,6 +15,10 @@ export interface ShellNavItem {
   icon: LucideIcon;
   ai?: boolean;
   badge?: number;
+  /** Утасны доод tab bar-т гарах эсэх (роль тус бүр 3-4 гол цэс) */
+  primary?: boolean;
+  /** Доод tab bar дахь богино нэр (сонголт) */
+  shortLabel?: string;
 }
 
 export interface ShellNavSection {
@@ -59,6 +63,14 @@ export function DashboardShell({
   const allItems = sections.flatMap((s) => s.items);
   const pageLabel = allItems.find((n) => n.id === activeView)?.label ?? portalLabel;
   const initials = `${user.first_name?.[0] ?? ""}${user.last_name?.[0] ?? ""}`.toUpperCase();
+
+  // Утасны доод tab bar: primary тэмдэглэсэн 3-4 цэс (байхгүй бол эхний 4)
+  const flagged = allItems.filter((i) => i.primary);
+  const bottomItems = (flagged.length ? flagged : allItems).slice(0, 4);
+  const bottomIds = new Set(bottomItems.map((i) => i.id));
+  // "Цэс" товч дээр цэг: доод bar-т ороогүй, уншаагүй мессежтэй бол
+  const moreHasBadge = !bottomIds.has("messages") && unreadMessages > 0;
+  const activeInMore = !bottomIds.has(activeView);
 
   const NavButton = ({ item }: { item: ShellNavItem }) => {
     const Icon = item.icon;
@@ -179,13 +191,11 @@ export function DashboardShell({
       {/* Main */}
       <div className="flex flex-1 flex-col overflow-hidden">
         <header className="flex h-16 shrink-0 items-center justify-between border-b border-border bg-card/80 px-4 backdrop-blur-sm md:px-6">
-          <div className="flex items-center gap-3">
-            <button
-              className="rounded-lg p-2 text-muted-foreground transition hover:bg-muted md:hidden"
-              onClick={() => setMobileOpen(true)}
-            >
-              <Menu className="size-5" />
-            </button>
+          <div className="flex items-center gap-2.5">
+            {/* Утсанд лого — desktop-т хажуугийн цэст бий */}
+            <div className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground md:hidden">
+              <GraduationCap className="size-5" />
+            </div>
             <h2 className="text-lg font-semibold tracking-tight text-foreground">{pageLabel}</h2>
           </div>
 
@@ -203,12 +213,71 @@ export function DashboardShell({
           </div>
         </header>
 
-        <main className={cn("flex-1 overflow-y-auto", mainClassName)}>
+        <main
+          className={cn("flex-1 overflow-y-auto pb-[calc(4rem+env(safe-area-inset-bottom))] md:pb-0", mainClassName)}
+        >
           <div key={activeView} className="animate-in-fade h-full">
             {children}
           </div>
         </main>
       </div>
+
+      {/* Утасны доод навигаци — 1 товшилтоор гол цэс, эрхий хуруунд хүрэх */}
+      <nav
+        className="fixed inset-x-0 bottom-0 z-40 flex items-stretch border-t border-border bg-card/95 backdrop-blur md:hidden"
+        style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+      >
+        {bottomItems.map((item) => {
+          const Icon = item.icon;
+          const isActive = activeView === item.id;
+          const badge = item.id === "messages" ? unreadMessages : item.badge ?? 0;
+          return (
+            <button
+              key={item.id}
+              onClick={() => {
+                onViewChange(item.id);
+                setMobileOpen(false);
+              }}
+              className={cn(
+                "relative flex flex-1 flex-col items-center justify-center gap-0.5 py-2 text-[10px] font-medium transition-colors",
+                isActive ? "text-primary" : "text-muted-foreground",
+              )}
+            >
+              {isActive && (
+                <span className="absolute top-0 h-0.5 w-8 rounded-b-full bg-primary" />
+              )}
+              <span className="relative">
+                <Icon className="size-5" />
+                {badge > 0 && (
+                  <span className="absolute -right-2 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[9px] font-bold text-white">
+                    {badge > 9 ? "9+" : badge}
+                  </span>
+                )}
+              </span>
+              <span className="max-w-full truncate px-0.5">{item.shortLabel ?? item.label}</span>
+            </button>
+          );
+        })}
+        {/* Цэс — үлдсэн бүх хуудсыг drawer-ээр */}
+        <button
+          onClick={() => setMobileOpen(true)}
+          className={cn(
+            "relative flex flex-1 flex-col items-center justify-center gap-0.5 py-2 text-[10px] font-medium transition-colors",
+            activeInMore ? "text-primary" : "text-muted-foreground",
+          )}
+        >
+          {activeInMore && (
+            <span className="absolute top-0 h-0.5 w-8 rounded-b-full bg-primary" />
+          )}
+          <span className="relative">
+            <MoreHorizontal className="size-5" />
+            {moreHasBadge && (
+              <span className="absolute -right-1.5 -top-1 size-2 rounded-full bg-rose-500" />
+            )}
+          </span>
+          <span>Цэс</span>
+        </button>
+      </nav>
     </div>
   );
 }

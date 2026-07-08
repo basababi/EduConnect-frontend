@@ -1,8 +1,9 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { PwaRegister } from "@/components/pwa-register";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -21,6 +22,24 @@ export const metadata: Metadata = {
   description:
     "Монголын ерөнхий боловсролын хувийн сургуулиудад зориулсан нэгдсэн дижитал платформ. Ирц бүртгэл, дүнгийн журнал, эцэг эх-багш чат.",
   keywords: ["EduConnect", "сургууль", "ирц", "дүн", "Mongolia", "SaaS"],
+  manifest: "/manifest.webmanifest",
+  applicationName: "EduConnect",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "EduConnect",
+  },
+  icons: {
+    icon: "/icon.svg",
+    apple: "/icon.svg",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#1b2b4b",
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({
@@ -33,6 +52,7 @@ export default function RootLayout({
       >
         <TooltipProvider delayDuration={200}>{children}</TooltipProvider>
         <Toaster position="top-right" richColors />
+        <PwaRegister />
       </body>
     </html>
   );

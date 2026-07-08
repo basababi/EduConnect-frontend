@@ -29,12 +29,12 @@ const SECTIONS: ShellNavSection[] = [
   {
     label: "Заах үйл ажиллагаа",
     items: [
-      { id: "overview", label: "Нүүр", icon: Home },
+      { id: "overview", label: "Нүүр", icon: Home, primary: true },
       { id: "subjects", label: "Миний хичээлүүд", icon: BookMarked },
       { id: "students", label: "Сурагчид", icon: Users },
-      { id: "attendance", label: "Ирц бүртгэл", icon: CheckSquare },
-      { id: "grades", label: "Дүн шинжилгээ", icon: BarChart3 },
-      { id: "assignments", label: "Даалгавар", icon: FileText },
+      { id: "attendance", label: "Ирц бүртгэл", icon: CheckSquare, primary: true, shortLabel: "Ирц" },
+      { id: "grades", label: "Дүн шинжилгээ", icon: BarChart3, primary: true, shortLabel: "Дүн" },
+      { id: "assignments", label: "Даалгавар", icon: FileText, primary: true, shortLabel: "Даалгавар" },
       { id: "materials", label: "Хичээлийн материал", icon: FolderOpen },
       { id: "ai-reviews", label: "AI шалгалт", icon: ClipboardCheck },
       { id: "messages", label: "Мессеж", icon: MessageSquare },

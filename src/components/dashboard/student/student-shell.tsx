@@ -23,9 +23,9 @@ const SECTIONS: ShellNavSection[] = [
   {
     label: "Үндсэн цэс",
     items: [
-      { id: "overview", label: "Нүүр", icon: Home },
-      { id: "schedule", label: "Хуваарь", icon: Calendar },
-      { id: "submissions", label: "Даалгавар", icon: FileText },
+      { id: "overview", label: "Нүүр", icon: Home, primary: true },
+      { id: "schedule", label: "Хуваарь", icon: Calendar, primary: true },
+      { id: "submissions", label: "Даалгавар", icon: FileText, primary: true },
       { id: "materials", label: "Хичээлийн материал", icon: FolderOpen },
       { id: "announcements", label: "Зарлал", icon: Megaphone },
       { id: "messages", label: "Мессеж", icon: MessageSquare },
@@ -34,8 +34,8 @@ const SECTIONS: ShellNavSection[] = [
   {
     label: "AI Дагуул",
     items: [
-      { id: "ai-tutor", label: "Хичээлийн Дагуул", icon: BookOpen, ai: true },
-      { id: "career", label: "Карьер Зөвлөгөө", icon: Briefcase, ai: true },
+      { id: "ai-tutor", label: "Хичээлийн Дагуул", icon: BookOpen, ai: true, primary: true, shortLabel: "Дагуул" },
+      { id: "career", label: "Карьер Зөвлөгөө", icon: Briefcase, ai: true, shortLabel: "Карьер" },
       { id: "ai-chat", label: "AI Туслах", icon: Bot, ai: true },
     ],
   },
