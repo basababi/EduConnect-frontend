@@ -26,6 +26,7 @@ export type AdminView =
   | "schools"
   | "users"
   | "classes"
+  | "universities"
   | "announcements"
   | "reports"
   | "settings";
@@ -40,6 +41,7 @@ const ADMIN_NAV: NavItem[] = [
   { id: "overview", label: "Нүүр", icon: Home },
   { id: "users", label: "Хэрэглэгчид", icon: Users },
   { id: "classes", label: "Ангиуд", icon: BookOpen },
+  { id: "universities", label: "Их сургууль (карьер)", icon: GraduationCap },
   { id: "announcements", label: "Зарлал", icon: Megaphone },
   { id: "reports", label: "Тайлан", icon: BarChart3 },
   { id: "settings", label: "Тохиргоо", icon: Settings },
@@ -49,6 +51,7 @@ const SUPER_ADMIN_NAV: NavItem[] = [
   { id: "overview", label: "Нүүр", icon: Home },
   { id: "schools", label: "Сургуулиуд", icon: Building2 },
   { id: "users", label: "Хэрэглэгчид", icon: Users },
+  { id: "universities", label: "Их сургууль (карьер)", icon: GraduationCap },
   { id: "announcements", label: "Зарлал", icon: Megaphone },
   { id: "reports", label: "Тайлан", icon: BarChart3 },
   { id: "settings", label: "Тохиргоо", icon: Settings },

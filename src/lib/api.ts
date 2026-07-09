@@ -1293,9 +1293,45 @@ export interface CareerQuestionnaire {
 export interface CareerProfileRes {
   has_profile: boolean;
   riasec: RiasecVector | null;
+  big5: Record<string, number> | null;
+  work_values: Record<string, number> | null;
   updated_at: string | null;
   academic: { subject: string; avg: number }[];
 }
+
+export interface RoadmapStep {
+  title: string;
+  hint: string;
+  done: boolean;
+}
+export interface CareerRoadmap {
+  grade: number;
+  steps: RoadmapStep[];
+}
+
+export interface DeepQuestionnaire {
+  likert: string[];
+  big5_items: { id: string; text: string }[];
+  value_items: { id: string; text: string; value: string }[];
+}
+export interface DeepScores {
+  big5: Record<string, number>;
+  work_values: Record<string, number>;
+}
+
+export interface UniversityProgramAdmin {
+  id: number;
+  university: string;
+  program: string;
+  city: string;
+  ownership: "state" | "private";
+  eyesh_subjects: string[];
+  cutoff_score: number;
+  field: string | null;
+  tuition_range: string | null;
+  status: string;
+}
+export type ProgramInput = Omit<UniversityProgramAdmin, "id">;
 
 export interface CareerRecommendationItem {
   career_id: number;
@@ -1351,10 +1387,29 @@ export interface FocusArea {
   avg: number;
   needed_for: string[];
 }
+export interface WeakTopic {
+  title: string;
+  mastery: number;
+}
 
 export const careerApi = {
   questionnaire: () => api.get<CareerQuestionnaire>("/careers/questionnaire"),
-  focus: () => api.get<{ areas: FocusArea[] }>("/careers/focus"),
+  focus: () =>
+    api.get<{ areas: FocusArea[]; weak_topics: WeakTopic[] }>("/careers/focus"),
+  roadmap: () => api.get<CareerRoadmap>("/careers/roadmap"),
+  deepQuestionnaire: () =>
+    api.get<DeepQuestionnaire>("/careers/deep-questionnaire"),
+  submitDeep: (answers: Record<string, number>) =>
+    api.post<DeepScores>("/careers/deep", { answers }),
+  // Админ — их сургуулийн сан
+  adminPrograms: () =>
+    api.get<UniversityProgramAdmin[]>("/careers/admin/programs"),
+  adminCreateProgram: (data: ProgramInput) =>
+    api.post<UniversityProgramAdmin>("/careers/admin/programs", data),
+  adminUpdateProgram: (id: number, data: ProgramInput) =>
+    api.patch<UniversityProgramAdmin>(`/careers/admin/programs/${id}`, data),
+  adminDeleteProgram: (id: number) =>
+    api.delete<{ ok: boolean }>(`/careers/admin/programs/${id}`),
   submit: (answers: Record<string, number>) =>
     api.post<CareerProfileRes>("/careers/questionnaire", { answers }),
   profile: () => api.get<CareerProfileRes>("/careers/profile"),

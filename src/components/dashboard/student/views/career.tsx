@@ -27,6 +27,11 @@ import {
   MapPin,
   School,
   BookOpen,
+  CheckCircle2,
+  Circle,
+  Brain,
+  Heart,
+  ListChecks,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -40,10 +45,19 @@ import {
   type SchoolMatches,
   type SchoolMatchItem,
   type FocusArea,
+  type WeakTopic,
+  type CareerRoadmap,
+  type DeepQuestionnaire,
 } from "@/lib/api";
 import type { StudentView } from "@/components/dashboard/student/student-shell";
 
-type Stage = "loading" | "intro" | "quiz" | "scoring" | "results";
+type Stage =
+  | "loading"
+  | "intro"
+  | "quiz"
+  | "scoring"
+  | "results"
+  | "deep-quiz";
 
 const DIM_LABEL: Record<keyof RiasecVector, string> = {
   R: "Практик / Техник",
@@ -52,6 +66,14 @@ const DIM_LABEL: Record<keyof RiasecVector, string> = {
   S: "Нийгмийн / Туслах",
   E: "Санаачлагч / Удирдах",
   C: "Зохион байгуулалттай",
+};
+
+const BIG5_LABEL: Record<string, string> = {
+  O: "Нээлттэй байдал",
+  C: "Хариуцлагатай байдал",
+  E: "Гадагшаа чиглэл",
+  A: "Найрсаг байдал",
+  N: "Сэтгэл хөдлөлийн тогтвор",
 };
 
 const PAGE_SIZE = 6;
@@ -465,6 +487,14 @@ export function StudentCareer({
   const [recs, setRecs] = useState<CareerRecommendations | null>(null);
   const [discover, setDiscover] = useState<CareerDiscover | null>(null);
   const [focus, setFocus] = useState<FocusArea[]>([]);
+  const [weakTopics, setWeakTopics] = useState<WeakTopic[]>([]);
+  const [roadmap, setRoadmap] = useState<CareerRoadmap | null>(null);
+  const [deep, setDeep] = useState<{
+    big5: Record<string, number>;
+    work_values: Record<string, number>;
+  } | null>(null);
+  const [deepQuiz, setDeepQuiz] = useState<DeepQuestionnaire | null>(null);
+  const [deepAnswers, setDeepAnswers] = useState<Record<string, number>>({});
   const [detail, setDetail] = useState<CareerItem | null>(null);
   const [tab, setTab] = useState<"guide" | "schools" | "coach">("guide");
 
@@ -483,18 +513,59 @@ export function StudentCareer({
 
   async function loadResults() {
     try {
-      const [r, d, f] = await Promise.all([
+      const [r, d, f, rm, p] = await Promise.all([
         careerApi.recommendations(),
         careerApi.discover().catch(() => null),
         careerApi.focus().catch(() => null),
+        careerApi.roadmap().catch(() => null),
+        careerApi.profile().catch(() => null),
       ]);
       setRecs(r);
       setDiscover(d);
       setFocus(f?.areas ?? []);
+      setWeakTopics(f?.weak_topics ?? []);
+      setRoadmap(rm);
+      setDeep(
+        p?.big5
+          ? { big5: p.big5, work_values: p.work_values ?? {} }
+          : null,
+      );
       setStage("results");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Ачаалж чадсангүй");
       setStage("intro");
+    }
+  }
+
+  async function startDeep() {
+    setStage("loading");
+    try {
+      const q = await careerApi.deepQuestionnaire();
+      setDeepQuiz(q);
+      setDeepAnswers({});
+      setStage("deep-quiz");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Асуулга ачаалж чадсангүй");
+      setStage("results");
+    }
+  }
+
+  async function submitDeep() {
+    if (!deepQuiz) return;
+    const all = [...deepQuiz.big5_items, ...deepQuiz.value_items];
+    const missing = all.filter((it) => !deepAnswers[it.id]);
+    if (missing.length > 0) {
+      toast.error(`${missing.length} асуулт хариулаагүй байна`);
+      return;
+    }
+    setStage("scoring");
+    try {
+      const res = await careerApi.submitDeep(deepAnswers);
+      setDeep(res);
+      await loadResults();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Илгээж чадсангүй");
+      setStage("deep-quiz");
     }
   }
 
@@ -774,6 +845,114 @@ export function StudentCareer({
           </CardContent>
         </Card>
 
+        {/* Ангиас хамаарсан замын зураг */}
+        {roadmap && roadmap.steps.length > 0 && (
+          <Card>
+            <CardContent className="space-y-3 p-6">
+              <p className="flex items-center gap-2 font-semibold text-foreground">
+                <ListChecks className="h-4 w-4 text-primary" />
+                {roadmap.grade
+                  ? `${roadmap.grade}-р ангийн замын зураг`
+                  : "Миний замын зураг"}
+              </p>
+              <div className="space-y-2.5">
+                {roadmap.steps.map((s, i) => (
+                  <div key={i} className="flex items-start gap-2.5">
+                    {s.done ? (
+                      <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-green-600" />
+                    ) : (
+                      <Circle className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+                    )}
+                    <div className="min-w-0">
+                      <p
+                        className={`text-sm ${
+                          s.done
+                            ? "text-muted-foreground line-through"
+                            : "font-medium text-foreground"
+                        }`}
+                      >
+                        {s.title}
+                      </p>
+                      <p className="text-xs text-muted-foreground">{s.hint}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Гүн профайл — Big Five + үнэт зүйлс */}
+        <Card>
+          <CardContent className="space-y-3 p-6">
+            <div className="flex items-center justify-between">
+              <p className="flex items-center gap-2 font-semibold text-foreground">
+                <Brain className="h-4 w-4 text-primary" />
+                Гүн профайл
+              </p>
+              {deep && (
+                <Button variant="ghost" size="sm" onClick={startDeep}>
+                  Дахин
+                </Button>
+              )}
+            </div>
+            {deep ? (
+              <>
+                {(["O", "C", "E", "A", "N"] as const).map((d) => {
+                  const v = Math.round((deep.big5[d] ?? 0) * 100);
+                  return (
+                    <div key={d} className="space-y-1">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-foreground">{BIG5_LABEL[d]}</span>
+                        <span className="text-muted-foreground">{v}%</span>
+                      </div>
+                      <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+                        <div
+                          className="h-full rounded-full bg-primary"
+                          style={{ width: `${v}%` }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+                {Object.keys(deep.work_values).length > 0 && (
+                  <div className="pt-1">
+                    <p className="mb-1.5 text-xs font-medium text-muted-foreground">
+                      Гол үнэт зүйлс:
+                    </p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {Object.entries(deep.work_values)
+                        .sort((a, b) => b[1] - a[1])
+                        .slice(0, 4)
+                        .map(([name]) => (
+                          <Badge
+                            key={name}
+                            variant="secondary"
+                            className="gap-1 text-xs"
+                          >
+                            <Heart className="h-3 w-3 text-rose-500" />
+                            {name}
+                          </Badge>
+                        ))}
+                    </div>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="space-y-3">
+                <p className="text-sm text-muted-foreground">
+                  Big Five зан чанар + ажлын үнэт зүйлсийн 23 асуулт (~5 мин).
+                  Зөвлөх болон мэргэжлийн санал болголтыг илүү нарийвчилна.
+                </p>
+                <Button variant="amber" className="gap-2" onClick={startDeep}>
+                  <Brain className="h-4 w-4" />
+                  Гүн профайл бөглөх
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
         {/* AI narrative */}
         {recs.narrative && (
           <Card>
@@ -788,36 +967,62 @@ export function StudentCareer({
         )}
 
         {/* Сайжруулбал тустай хичээл → AI Tutor (битүү гогцоо) */}
-        {focus.length > 0 && (
+        {(focus.length > 0 || weakTopics.length > 0) && (
           <Card className="border-amber/40 bg-amber/5">
             <CardContent className="space-y-3 p-6">
               <div>
                 <p className="flex items-center gap-2 font-semibold text-foreground">
                   <Target className="h-4 w-4 text-amber" />
-                  Сайжруулбал тустай хичээл
+                  Сайжруулбал тустай
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  Тохирсон мэргэжилд чинь хэрэгтэй, дүн одоогоор сул хичээлүүд:
+                  Тохирсон мэргэжилд чинь хэрэгтэй, одоогоор сул талууд:
                 </p>
               </div>
-              <div className="space-y-2">
-                {focus.map((a) => (
-                  <div
-                    key={a.subject}
-                    className="flex flex-wrap items-center justify-between gap-2 rounded-lg border bg-card p-3"
-                  >
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium text-foreground">
-                        {a.subject}{" "}
-                        <span className="text-muted-foreground">· {a.avg}%</span>
-                      </p>
-                      <p className="truncate text-xs text-muted-foreground">
-                        {a.needed_for.join(", ")} мэргэжилд хэрэгтэй
-                      </p>
+
+              {focus.length > 0 && (
+                <div className="space-y-2">
+                  {focus.map((a) => (
+                    <div
+                      key={a.subject}
+                      className="flex flex-wrap items-center justify-between gap-2 rounded-lg border bg-card p-3"
+                    >
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-foreground">
+                          {a.subject}{" "}
+                          <span className="text-muted-foreground">
+                            · {a.avg}%
+                          </span>
+                        </p>
+                        <p className="truncate text-xs text-muted-foreground">
+                          {a.needed_for.join(", ")} мэргэжилд хэрэгтэй
+                        </p>
+                      </div>
                     </div>
+                  ))}
+                </div>
+              )}
+
+              {/* AI Tutor-ийн дасгалаас илэрсэн сул СЭДВҮҮД (нарийвчлал) */}
+              {weakTopics.length > 0 && (
+                <div className="rounded-lg border border-dashed bg-card p-3">
+                  <p className="mb-1.5 text-xs font-medium text-muted-foreground">
+                    Хичээлийн Дагуулаас илэрсэн сул сэдвүүд:
+                  </p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {weakTopics.map((t) => (
+                      <Badge
+                        key={t.title}
+                        variant="secondary"
+                        className="text-[11px]"
+                      >
+                        {t.title} · {t.mastery}%
+                      </Badge>
+                    ))}
                   </div>
-                ))}
-              </div>
+                </div>
+              )}
+
               {onNavigate && (
                 <Button
                   variant="amber"
@@ -945,6 +1150,82 @@ export function StudentCareer({
         )}
         </div>
         )}
+      </div>
+    );
+  }
+
+  // ═══════════ DEEP QUIZ (Big Five + үнэт зүйлс) ═══════════
+  if (stage === "deep-quiz" && deepQuiz) {
+    const all = [...deepQuiz.big5_items, ...deepQuiz.value_items];
+    const answered = all.filter((it) => deepAnswers[it.id]).length;
+    return (
+      <div className="animate-in-rise space-y-6 p-6">
+        {header}
+        <div className="sticky top-0 z-10 rounded-xl border bg-background/95 p-3 backdrop-blur">
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-muted-foreground">
+              Гүн профайл · {answered}/{all.length} хариулсан
+            </span>
+            <button
+              onClick={() => setStage("results")}
+              className="text-xs text-muted-foreground transition hover:text-foreground"
+            >
+              Буцах
+            </button>
+          </div>
+          <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted">
+            <div
+              className="h-full rounded-full bg-primary transition-all"
+              style={{ width: `${(answered / all.length) * 100}%` }}
+            />
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          {all.map((it, idx) => (
+            <Card key={it.id}>
+              <CardContent className="space-y-3 p-4">
+                <p className="text-sm font-medium text-foreground">
+                  {idx + 1}. {it.text}
+                </p>
+                <div className="grid grid-cols-5 gap-1.5">
+                  {deepQuiz.likert.map((label, li) => {
+                    const val = li + 1;
+                    const on = deepAnswers[it.id] === val;
+                    return (
+                      <button
+                        key={val}
+                        onClick={() =>
+                          setDeepAnswers((a) => ({ ...a, [it.id]: val }))
+                        }
+                        title={label}
+                        className={`rounded-lg border px-1 py-2 text-[11px] font-medium transition-colors ${
+                          on
+                            ? "border-primary bg-primary text-primary-foreground"
+                            : "text-muted-foreground hover:bg-accent"
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        <div className="flex justify-end">
+          <Button
+            variant="amber"
+            className="gap-1.5"
+            disabled={answered < all.length}
+            onClick={submitDeep}
+          >
+            <Sparkles className="h-4 w-4" />
+            Дуусгах
+          </Button>
+        </div>
       </div>
     );
   }
