@@ -48,6 +48,7 @@ import { AdminShell, type AdminView } from "@/components/dashboard/admin/admin-s
 import { AdminOverview } from "@/components/dashboard/admin/views/overview";
 import { AdminUsers } from "@/components/dashboard/admin/views/users";
 import { AdminClasses } from "@/components/dashboard/admin/views/classes";
+import { AdminUniversities } from "@/components/dashboard/admin/views/universities";
 import { SuperAdminSchools } from "@/components/dashboard/admin/views/schools";
 import { AdminReports } from "@/components/dashboard/admin/views/reports";
 import { AnnouncementsView } from "@/components/dashboard/announcements-view";
@@ -209,6 +210,7 @@ export default function Home() {
           {adminView === "schools" && <SuperAdminSchools />}
           {adminView === "users" && <AdminUsers currentUser={user} />}
           {adminView === "classes" && <AdminClasses />}
+          {adminView === "universities" && <AdminUniversities />}
           {adminView === "announcements" && <AnnouncementsView />}
           {adminView === "reports" && <AdminReports />}
           {adminView === "settings" && <AccountSettings />}
