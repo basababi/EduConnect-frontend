@@ -1017,7 +1017,14 @@ export interface CurriculumUnit {
   topics: CurriculumTopic[];
 }
 
+export interface CurriculumCatalogEntry {
+  subject: string;
+  grades: { grade: number; units: number; topics: number }[];
+}
+
 export const curriculumApi = {
+  catalog: () =>
+    api.get<CurriculumCatalogEntry[]>("/curriculum/catalog"),
   tree: (subject = "math", grade = 11) =>
     api.get<CurriculumUnit[]>(`/curriculum?subject=${subject}&grade=${grade}`),
   unit: (id: number) => api.get<CurriculumUnit>(`/curriculum/units/${id}`),
