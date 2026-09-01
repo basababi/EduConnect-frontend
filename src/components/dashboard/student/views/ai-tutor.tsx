@@ -90,19 +90,56 @@ const SUBJECTS: {
   { key: "social", label: "Нийгэм", icon: Users, tint: "bg-violet-50 text-violet-600" },
 ];
 
-/** Сурах бичгийн түүхий LaTeX-ийг уншихад ойлгомжтой болгож цэвэрлэх */
+// Текстийн (математик БУС) LaTeX-ийг цэвэрлэнэ. Математик орчны командыг хөндөхгүй.
+const TEXT_ENVS =
+  "center|flushleft|flushright|itemize|enumerate|figure|table|quote|sffamily|small|large|Large|huge|Huge|minipage|description|abstract";
+
+function cleanText(s: string): string {
+  return (
+    s
+      .replace(/<!--[\s\S]*?-->/g, "") // HTML коммент (х.N тэмдэглэл)
+      .replace(/^[ \t]*%.*$/gm, "") // LaTeX коммент (зураг/sidebar тэмдэглэл)
+      .replace(/%[ \t]*$/gm, "") // мөр төгсгөлийн % (line-continuation)
+      .replace(
+        /\\(fbox|framebox|colorbox|parbox|makebox|mbox)\s*(\[[^\]]*\])?\s*(\{[^{}]*\})?\s*\{?/g,
+        "",
+      ) // хайрцаг команд
+      .replace(/\\(sub){0,2}section\*?\{([^}]*)\}/g, "\n$2\n") // гарчиг → текст
+      .replace(
+        /\\(textbf|textit|emph|underline|textsf|texttt|textrm|text)\{([^}]*)\}/g,
+        "$2",
+      )
+      .replace(new RegExp(`\\\\begin\\{(?:${TEXT_ENVS})\\}(\\[[^\\]]*\\])?`, "g"), "\n")
+      .replace(new RegExp(`\\\\end\\{(?:${TEXT_ENVS})\\}`, "g"), "\n")
+      .replace(/\\begin\{tabular\}\{[^}]*\}/g, "\n")
+      .replace(/\\end\{tabular\}/g, "\n")
+      .replace(/\\hline/g, "")
+      .replace(/\\item\s*/g, "\n• ")
+      .replace(/&/g, "   ") // хүснэгтийн нүд (математик бус хэсэгт аюулгүй)
+      .replace(/\\\\/g, "\n") // мөр таслал
+      .replace(/\\includegraphics(\[[^\]]*\])?\{[^}]*\}/g, "")
+      .replace(
+        /\\(noindent|vspace\*?|hspace\*?|hfill|vfill|raggedright|raggedleft|newpage|clearpage|smallskip|medskip|bigskip|centering|par|dotfill|maketitle|tableofcontents)\b(\{[^}]*\}|\[[^\]]*\])?/g,
+        "",
+      )
+      .replace(/\\(put|rotatebox|setlength|renewcommand)\s*(\([^)]*\))?\s*(\{[^}]*\})?\s*(\{[^}]*\})?/g, "")
+      .replace(/^[ \t]*[{}]+[ \t]*$/gm, "") // зөвхөн хаалттай мөр
+      .replace(/[ \t]{2,}/g, " ")
+  );
+}
+
+/**
+ * Сурах бичгийн түүхий LaTeX-ийг уншихад ойлгомжтой болгоно.
+ * Математик хэсгийг ($...$, $$...$$, \[...\], \(...\)) ХЭВЭЭР үлдээж, зөвхөн текстийг
+ * цэвэрлэнэ → KaTeX математикийг зөв рендэрлэнэ.
+ */
 function cleanContent(raw: string): string {
-  return raw
-    .replace(/<!--[\s\S]*?-->/g, "")
-    .replace(/\\(sub)?section\*?\{([^}]*)\}/g, "\n$2\n")
-    .replace(/\\textbf\{([^}]*)\}/g, "$1")
-    .replace(/\\emph\{([^}]*)\}/g, "$1")
-    .replace(/\\begin\{[^}]*\}|\\end\{[^}]*\}/g, "")
-    .replace(
-      /\\(item|noindent|centerline|vspace\*?|hspace\*?|hfill|raggedright|raggedleft|newpage|includegraphics|dotfill|put|rotatebox)\b(\[[^\]]*\])?(\{[^}]*\})?/g,
-      "",
-    )
-    .replace(/[ \t]{2,}/g, " ")
+  const mathRe =
+    /(\$\$[\s\S]*?\$\$|\$[^$\n]+?\$|\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\))/g;
+  const parts = raw.split(mathRe);
+  return parts
+    .map((p, i) => (i % 2 === 1 ? p : cleanText(p)))
+    .join("")
     .replace(/\n{3,}/g, "\n\n")
     .trim();
 }
