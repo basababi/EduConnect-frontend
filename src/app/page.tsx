@@ -31,6 +31,7 @@ import { StudentOverview } from "@/components/dashboard/student/views/overview";
 import { StudentAITutor } from "@/components/dashboard/student/views/ai-tutor";
 import { StudentAIChat } from "@/components/dashboard/student/views/ai-chat";
 import { StudentCareer } from "@/components/dashboard/student/views/career";
+import { StudentExams } from "@/components/dashboard/student/views/exams";
 import { StudentSchedule } from "@/components/dashboard/student/views/schedule";
 import { StudentSubmissions } from "@/components/dashboard/student/views/submissions";
 import { StudentMaterials } from "@/components/dashboard/student/views/materials";
@@ -49,6 +50,7 @@ import { AdminOverview } from "@/components/dashboard/admin/views/overview";
 import { AdminUsers } from "@/components/dashboard/admin/views/users";
 import { AdminClasses } from "@/components/dashboard/admin/views/classes";
 import { AdminUniversities } from "@/components/dashboard/admin/views/universities";
+import { AdminExams } from "@/components/dashboard/admin/views/exams";
 import { SuperAdminSchools } from "@/components/dashboard/admin/views/schools";
 import { AdminReports } from "@/components/dashboard/admin/views/reports";
 import { AnnouncementsView } from "@/components/dashboard/announcements-view";
@@ -164,6 +166,7 @@ export default function Home() {
           {studentView === "career" && (
             <StudentCareer onNavigate={setStudentView} />
           )}
+          {studentView === "exams" && <StudentExams />}
           {studentView === "schedule" && <StudentSchedule />}
           {studentView === "submissions" && <StudentSubmissions />}
           {studentView === "materials" && <StudentMaterials />}
@@ -211,6 +214,7 @@ export default function Home() {
           {adminView === "users" && <AdminUsers currentUser={user} />}
           {adminView === "classes" && <AdminClasses />}
           {adminView === "universities" && <AdminUniversities />}
+          {adminView === "exams" && <AdminExams />}
           {adminView === "announcements" && <AnnouncementsView />}
           {adminView === "reports" && <AdminReports />}
           {adminView === "settings" && <AccountSettings />}

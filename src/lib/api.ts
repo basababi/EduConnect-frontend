@@ -1389,6 +1389,90 @@ export interface SchoolMatches {
   reach: SchoolMatchItem[];
 }
 
+// ─────────────── Нийтийн шалгалт ───────────────
+export interface ExamListItem {
+  id: number;
+  subject: string;
+  grade: number;
+  title: string;
+  status: string;
+  question_count: number;
+  created_at: string;
+  attempted: boolean;
+  my_score: number | null;
+}
+export interface ExamTakeQuestion {
+  id: string;
+  topic_title: string;
+  difficulty: string;
+  question: string;
+  options: string[];
+}
+export interface ExamTake {
+  id: number;
+  title: string;
+  subject: string;
+  grade: number;
+  questions: ExamTakeQuestion[];
+}
+export interface ExamTopicScore {
+  topic_id: number;
+  title: string;
+  correct: number;
+  total: number;
+}
+export interface ExamSubmitResult {
+  score: number;
+  correct: number;
+  total: number;
+  per_topic: ExamTopicScore[];
+  rank: number;
+  totalParticipants: number;
+}
+export interface ExamReviewItem {
+  id: string;
+  question: string;
+  options: string[];
+  correct_index: number;
+  my_answer: number | null;
+  explanation: string | null;
+  topic_title: string;
+}
+export interface ExamMyResult extends ExamSubmitResult {
+  title: string;
+  review: ExamReviewItem[];
+}
+export interface ExamLeaderboard {
+  title: string;
+  rows: { rank: number; name: string; school: string; score: number }[];
+}
+
+export interface ExamAdminItem {
+  id: number;
+  subject: string;
+  grade: number;
+  title: string;
+  status: string;
+  question_count: number;
+  created_at: string;
+  participants: number;
+}
+
+export const examApi = {
+  list: () => api.get<ExamListItem[]>("/exams"),
+  manage: () => api.get<ExamAdminItem[]>("/exams/manage"),
+  take: (id: number) => api.get<ExamTake>(`/exams/${id}/take`),
+  submit: (id: number, answers: Record<string, number>) =>
+    api.post<ExamSubmitResult>(`/exams/${id}/submit`, { answers }),
+  myResult: (id: number) => api.get<ExamMyResult>(`/exams/${id}/my-result`),
+  leaderboard: (id: number) => api.get<ExamLeaderboard>(`/exams/${id}/leaderboard`),
+  // Админ
+  create: (dto: { subject: string; grade: number; title: string; count: number }) =>
+    api.post<{ id: number }>("/exams", dto),
+  setStatus: (id: number, status: "open" | "closed") =>
+    api.patch<{ id: number; status: string }>(`/exams/${id}/status`, { status }),
+};
+
 export interface FocusArea {
   subject: string;
   avg: number;

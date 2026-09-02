@@ -17,6 +17,7 @@ import {
   Shield,
   Building2,
   Megaphone,
+  Trophy,
 } from "lucide-react";
 import { authApi, type User } from "@/lib/api";
 import { NotificationBell } from "@/components/dashboard/notification-bell";
@@ -27,6 +28,7 @@ export type AdminView =
   | "users"
   | "classes"
   | "universities"
+  | "exams"
   | "announcements"
   | "reports"
   | "settings";
@@ -42,6 +44,7 @@ const ADMIN_NAV: NavItem[] = [
   { id: "users", label: "Хэрэглэгчид", icon: Users },
   { id: "classes", label: "Ангиуд", icon: BookOpen },
   { id: "universities", label: "Их сургууль (карьер)", icon: GraduationCap },
+  { id: "exams", label: "Нийтийн шалгалт", icon: Trophy },
   { id: "announcements", label: "Зарлал", icon: Megaphone },
   { id: "reports", label: "Тайлан", icon: BarChart3 },
   { id: "settings", label: "Тохиргоо", icon: Settings },
@@ -52,6 +55,7 @@ const SUPER_ADMIN_NAV: NavItem[] = [
   { id: "schools", label: "Сургуулиуд", icon: Building2 },
   { id: "users", label: "Хэрэглэгчид", icon: Users },
   { id: "universities", label: "Их сургууль (карьер)", icon: GraduationCap },
+  { id: "exams", label: "Нийтийн шалгалт", icon: Trophy },
   { id: "announcements", label: "Зарлал", icon: Megaphone },
   { id: "reports", label: "Тайлан", icon: BarChart3 },
   { id: "settings", label: "Тохиргоо", icon: Settings },

@@ -1,7 +1,7 @@
 "use client";
 
 import {
-  Home, BookOpen, Briefcase, MessageSquare, Calendar, Bot, FileText, Megaphone, FolderOpen,
+  Home, BookOpen, Briefcase, MessageSquare, Calendar, Bot, FileText, Megaphone, FolderOpen, Trophy,
 } from "lucide-react";
 import { type User } from "@/lib/api";
 import {
@@ -13,6 +13,7 @@ export type StudentView =
   | "ai-tutor"
   | "ai-chat"
   | "career"
+  | "exams"
   | "schedule"
   | "submissions"
   | "materials"
@@ -35,6 +36,7 @@ const SECTIONS: ShellNavSection[] = [
     label: "AI Дагуул",
     items: [
       { id: "ai-tutor", label: "Хичээлийн Дагуул", icon: BookOpen, ai: true, primary: true, shortLabel: "Дагуул" },
+      { id: "exams", label: "Нийтийн шалгалт", icon: Trophy, shortLabel: "Шалгалт" },
       { id: "career", label: "Карьер Зөвлөгөө", icon: Briefcase, ai: true, shortLabel: "Карьер" },
       { id: "ai-chat", label: "AI Туслах", icon: Bot, ai: true },
     ],
