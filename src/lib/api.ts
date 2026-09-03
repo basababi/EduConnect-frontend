@@ -1124,6 +1124,12 @@ export const aiApi = {
       question_id,
       message,
     }),
+  hint: (assessment_id: number, question_id: string, level: number) =>
+    api.post<{ level: number; max_level: number; hint: string }>("/ai/hint", {
+      assessment_id,
+      question_id,
+      level,
+    }),
   submit: (
     id: number,
     answers: Record<string, number | string>,

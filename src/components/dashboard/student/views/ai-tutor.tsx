@@ -164,6 +164,9 @@ export function StudentAITutor() {
   const [submitting, setSubmitting] = useState(false);
   const [explains, setExplains] = useState<Record<string, string>>({});
   const [whyLoading, setWhyLoading] = useState<string | null>(null);
+  // ── P1 · Шатласан сэжүүр (дасгал бодох үед — хариу биш) ──
+  const [hints, setHints] = useState<Record<string, string[]>>({});
+  const [hintLoading, setHintLoading] = useState<string | null>(null);
 
   // ── Шударга байдал (F7) ──
   const pasteBlocked = useRef(0);
@@ -256,6 +259,7 @@ export function StudentAITutor() {
       setAssessment(a);
       setAnswers({});
       setExplains({});
+      setHints({});
       setStage("test");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Дасгал үүсгэж чадсангүй");
@@ -334,12 +338,30 @@ export function StudentAITutor() {
     }
   }
 
+  /** P1 · Дараагийн түвшний сэжүүр авах (1→2→3, хариу гардаггүй) */
+  async function requestHint(qId: string) {
+    if (!assessment) return;
+    const current = hints[qId] ?? [];
+    const nextLevel = current.length + 1;
+    if (nextLevel > 3 || hintLoading) return;
+    setHintLoading(qId);
+    try {
+      const r = await aiApi.hint(assessment.id, qId, nextLevel);
+      setHints((h) => ({ ...h, [qId]: [...current, r.hint] }));
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Сэжүүр авч чадсангүй");
+    } finally {
+      setHintLoading(null);
+    }
+  }
+
   function backToCatalog() {
     setStage("catalog");
     setActiveSubject(null);
     setActiveTopic(null);
     setAssessment(null);
     setAnswers({});
+    setHints({});
   }
 
   // ─────────────── ЕРӨНХИЙ ТОЛГОЙ ───────────────
@@ -802,6 +824,42 @@ export function StudentAITutor() {
                   </p>
                 </div>
               )}
+
+              {/* P1 · Шатласан сэжүүр — хариу өгөхгүй, өөрөө бодоход тусална */}
+              <div className="space-y-2 border-t border-dashed pt-3">
+                {(hints[q.id] ?? []).map((h, hi) => (
+                  <div
+                    key={hi}
+                    className="flex gap-2 rounded-lg bg-amber-50 p-2.5 text-sm text-amber-900"
+                  >
+                    <Lightbulb className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
+                    <div>
+                      <span className="mr-1 text-xs font-semibold text-amber-600">
+                        Сэжүүр {hi + 1}:
+                      </span>
+                      <MathText text={h} />
+                    </div>
+                  </div>
+                ))}
+                {(hints[q.id]?.length ?? 0) < 3 ? (
+                  <button
+                    onClick={() => requestHint(q.id)}
+                    disabled={hintLoading === q.id}
+                    className="inline-flex items-center gap-1.5 text-xs font-medium text-amber-600 hover:text-amber-700 disabled:opacity-50"
+                  >
+                    <Lightbulb className="h-3.5 w-3.5" />
+                    {hintLoading === q.id
+                      ? "Сэжүүр бэлдэж байна..."
+                      : (hints[q.id]?.length ?? 0) === 0
+                        ? "Сэжүүр авах (хариу өгөхгүй)"
+                        : `Дараагийн сэжүүр (${(hints[q.id]?.length ?? 0) + 1}/3)`}
+                  </button>
+                ) : (
+                  <p className="text-xs text-muted-foreground">
+                    Бүх сэжүүр дууслаа — одоо өөрөө бодоод үзээрэй.
+                  </p>
+                )}
+              </div>
             </CardContent>
           </Card>
         ))}
