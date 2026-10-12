@@ -35,8 +35,11 @@ export function StudentAIChat() {
     try {
       const res = await fetch("/api/gemini", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: history, token: getToken() }),
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${getToken() ?? ""}`,
+        },
+        body: JSON.stringify({ messages: history }),
       });
       const data = await res.json();
       setMessages((prev) => [

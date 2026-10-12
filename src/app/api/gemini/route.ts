@@ -3,18 +3,42 @@ import { NextRequest, NextResponse } from "next/server";
 const GEMINI_URL =
   "https://generativelanguage.googleapis.com/v1beta/openai/v1/chat/completions";
 const MODEL = process.env.GEMINI_MODEL ?? "gemini-2.5-flash";
-const SCHOOL_API = process.env.SCHOOL_API_URL ?? "http://localhost:3001";
+const SCHOOL_API =
+  process.env.SCHOOL_API_URL ??
+  process.env.NEXT_PUBLIC_API_URL ??
+  "http://localhost:3001";
+
+// Зардал/урвуулан ашиглалтаас хамгаалах хязгаар
+const MAX_HISTORY = 20;
+const MAX_MESSAGE_CHARS = 4000;
+
+interface ToolCall {
+  id: string;
+  type?: string;
+  function?: { name?: string; arguments?: string };
+}
 
 interface ChatMsg {
   role: "user" | "assistant" | "system" | "tool";
   content: string;
-  tool_calls?: any[];
+  tool_calls?: ToolCall[];
   tool_call_id?: string;
   name?: string;
 }
 
+interface AuthedUser {
+  id: number;
+  role: string;
+  school?: { features?: Record<string, boolean> | null } | null;
+}
+
+interface SubjectAverage {
+  subject: string;
+  average_percentage: number;
+}
+
 const SYSTEM_PROMPT =
-  "Чи бол EduConnect сургуулийн платформын найрсаг сурган хүмүүжүүлэх туслах. " +
+  "Чи бол EduConnect сургалтын платформын найрсаг сурган хүмүүжүүлэх туслах. " +
   "Монгол хэлээр товч, эелдэг хариул. Цаг агаарын асуултад get_weather ашигла. " +
   "Сурагч өөрийн дүнгээ асуувал get_my_grades ашиглаад, дүнг нь хараад товч, " +
   "урам зоригтой зөвлөгөө өг (сул хичээлийг онцол).\n\n" +
@@ -50,11 +74,33 @@ const TOOLS = [
     function: {
       name: "get_my_grades",
       description:
-        "Нэвтэрсэн сарагчийн өөрийн дүнгийн дундаж, хичээл бүрийн дүнг авах",
+        "Нэвтэрсэн сурагчийн өөрийн дүнгийн дундаж, хичээл бүрийн дүнг авах",
       parameters: { type: "object", properties: {}, required: [] },
     },
   },
 ];
+
+/**
+ * Хүсэлтийг backend-ээр баталгаажуулна. JWT-г энд decode хийгээд итгэхгүй —
+ * гарын үсэг, хүчинтэй хугацаа, token_version-ийг зөвхөн backend шалгаж чадна.
+ */
+async function authenticate(
+  req: NextRequest,
+): Promise<{ user: AuthedUser; token: string } | null> {
+  const header = req.headers.get("authorization") ?? "";
+  const token = header.startsWith("Bearer ") ? header.slice(7).trim() : "";
+  if (!token) return null;
+  try {
+    const res = await fetch(`${SCHOOL_API}/api/v1/auth/me`, {
+      headers: { Authorization: `Bearer ${token}` },
+      cache: "no-store",
+    });
+    if (!res.ok) return null;
+    return { user: (await res.json()) as AuthedUser, token };
+  } catch {
+    return null;
+  }
+}
 
 async function getWeather(location: string): Promise<string> {
   const key = process.env.OPENWEATHER_API_KEY;
@@ -86,23 +132,7 @@ async function getWeather(location: string): Promise<string> {
   }
 }
 
-function decodeUserId(token?: string): number | null {
-  if (!token) return null;
-  try {
-    const payload = JSON.parse(
-      Buffer.from(token.split(".")[1], "base64").toString("utf8"),
-    );
-    return payload?.sub ?? null;
-  } catch {
-    return null;
-  }
-}
-
-async function getMyGrades(token?: string): Promise<string> {
-  const userId = decodeUserId(token);
-  if (!token || !userId) {
-    return JSON.stringify({ error: "Нэвтрээгүй байна. Дүн харахын тулд нэвтэрнэ үү." });
-  }
+async function getMyGrades(userId: number, token: string): Promise<string> {
   try {
     const res = await fetch(
       `${SCHOOL_API}/api/v1/grades/student/${userId}/average`,
@@ -115,14 +145,14 @@ async function getMyGrades(token?: string): Promise<string> {
       return JSON.stringify({ error: `Дүн авахад алдаа (${res.status}).` });
     }
     const d = await res.json();
-    const bySubject = d.by_subject ?? [];
+    const bySubject: SubjectAverage[] = d.by_subject ?? [];
     return JSON.stringify({
       average_percentage: d.average_percentage,
       total_grades: d.total_grades,
       subjects: bySubject,
       weak_subjects: bySubject
-        .filter((s: any) => s.average_percentage < 60)
-        .map((s: any) => s.subject),
+        .filter((s) => s.average_percentage < 60)
+        .map((s) => s.subject),
     });
   } catch {
     return JSON.stringify({ error: "Дүнгийн мэдээ татахад алдаа гарлаа." });
@@ -150,26 +180,50 @@ async function callGemini(messages: ChatMsg[], withTools: boolean) {
   return res.json();
 }
 
+/** Клиентээс зөвхөн user/assistant мессеж авна — system/tool үүргийг хуурамчаар оруулахаас сэргийлнэ. */
+function sanitizeHistory(raw: unknown): ChatMsg[] {
+  if (!Array.isArray(raw)) return [];
+  const out: ChatMsg[] = [];
+  for (const m of raw) {
+    const role = (m as { role?: unknown })?.role;
+    const content = (m as { content?: unknown })?.content;
+    if ((role !== "user" && role !== "assistant") || typeof content !== "string") continue;
+    out.push({ role, content: content.slice(0, MAX_MESSAGE_CHARS) });
+  }
+  return out.slice(-MAX_HISTORY);
+}
+
 export async function POST(req: NextRequest) {
+  // 1) Нэвтрэлт — нэвтрээгүй хүн AI квот зарцуулж чадахгүй
+  const auth = await authenticate(req);
+  if (!auth) {
+    return NextResponse.json({ error: "Нэвтрэх шаардлагатай" }, { status: 401 });
+  }
+  // 2) Эрх — зөвхөн AI Туслах идэвхжүүлсэн төвийн сурагч
+  if (auth.user.role !== "student" || auth.user.school?.features?.ai_chat !== true) {
+    return NextResponse.json(
+      { error: "AI Туслах танай байгууллагад идэвхжээгүй байна" },
+      { status: 403 },
+    );
+  }
   if (!process.env.GEMINI_API_KEY) {
     return NextResponse.json(
-      { error: "GEMINI_API_KEY тохируулаагүй байна (.env.local)" },
-      { status: 500 },
+      { error: "AI одоогоор тохируулагдаагүй байна" },
+      { status: 503 },
     );
   }
 
   try {
     const body = await req.json();
-    const history: ChatMsg[] = body.messages ?? [];
-    const userToken: string | undefined = body.token; 
+    const history = sanitizeHistory(body?.messages);
+    if (history.length === 0) {
+      return NextResponse.json({ error: "Мессеж хоосон байна" }, { status: 400 });
+    }
 
-    const messages: ChatMsg[] = [
-      { role: "system", content: SYSTEM_PROMPT },
-      ...history.map((m) => ({ role: m.role, content: m.content })),
-    ];
+    const messages: ChatMsg[] = [{ role: "system", content: SYSTEM_PROMPT }, ...history];
 
     let data = await callGemini(messages, true);
-    let msg = data?.choices?.[0]?.message;
+    let msg: ChatMsg | undefined = data?.choices?.[0]?.message;
 
     if (msg?.tool_calls?.length) {
       messages.push(msg);
@@ -184,7 +238,7 @@ export async function POST(req: NextRequest) {
           }
           result = await getWeather(loc);
         } else if (tc.function?.name === "get_my_grades") {
-          result = await getMyGrades(userToken);
+          result = await getMyGrades(auth.user.id, auth.token);
         }
         messages.push({
           role: "tool",
@@ -193,7 +247,7 @@ export async function POST(req: NextRequest) {
           content: result,
         });
       }
-     
+
       data = await callGemini(messages, false);
       msg = data?.choices?.[0]?.message;
     }
@@ -201,9 +255,8 @@ export async function POST(req: NextRequest) {
     const reply = (msg?.content ?? "").trim() || "Уучлаарай, хариу гаргаж чадсангүй.";
     return NextResponse.json({ reply });
   } catch (err) {
-    return NextResponse.json(
-      { error: err instanceof Error ? err.message : "AI алдаа" },
-      { status: 500 },
-    );
+    // Дотоод алдааны дэлгэрэнгүйг (Gemini-ийн хариу г.м) клиент рүү задлахгүй
+    console.error("[api/gemini]", err);
+    return NextResponse.json({ error: "AI хариу өгөхөд алдаа гарлаа" }, { status: 500 });
   }
 }
