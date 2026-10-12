@@ -42,7 +42,7 @@ export default function TermsPage() {
           <section>
             <h2 className="text-lg font-semibold text-foreground">1. Үйлчилгээний тухай</h2>
             <p className="mt-2 text-muted-foreground">
-              EduConnect Mongolia нь сургуулийн удирдлага, багш, эцэг эх, сурагчдад зориулсан
+              EduConnect Mongolia нь сургалтын төвийн удирдлага, багш, эцэг эх, сурагчдад зориулсан
               боловсролын удирдлагын платформ юм. Платформыг ашигласнаар та эдгээр нөхцөлийг
               хүлээн зөвшөөрч байгаад тооцно.
             </p>
@@ -52,7 +52,7 @@ export default function TermsPage() {
             <h2 className="text-lg font-semibold text-foreground">2. Данс ба хариуцлага</h2>
             <ul className="mt-2 list-disc space-y-1 pl-5 text-muted-foreground">
               <li>Хэрэглэгч нэвтрэх мэдээллээ нууц байлгах үүрэгтэй</li>
-              <li>Данс нь тухайн сургуулийн эрх бүхий этгээдээр үүсгэгдэнэ</li>
+              <li>Данс нь тухайн сургалтын төвийн эрх бүхий этгээдээр үүсгэгдэнэ</li>
               <li>Бусдын мэдээлэлд зөвшөөрөлгүй хандахыг хориглоно</li>
             </ul>
           </section>
@@ -79,7 +79,7 @@ export default function TermsPage() {
           <section>
             <h2 className="text-lg font-semibold text-foreground">5. Төлбөр</h2>
             <p className="mt-2 text-muted-foreground">
-              Үйлчилгээний төлбөр, багц нь сургуультай байгуулсан гэрээгээр тодорхойлогдоно.
+              Үйлчилгээний төлбөр, багц нь сургалтын төвтэй байгуулсан гэрээгээр тодорхойлогдоно.
             </p>
           </section>
 

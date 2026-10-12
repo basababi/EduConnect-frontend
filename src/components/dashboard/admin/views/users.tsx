@@ -45,14 +45,7 @@ import {
   type Invitation,
   type ClassRoom,
 } from "@/lib/api";
-
-const ROLE_LABEL: Record<string, string> = {
-  super_admin: "Супер Админ",
-  admin: "Сургуулийн Админ",
-  teacher: "Багш",
-  parent: "Эцэг эх",
-  student: "Сурагч",
-};
+import { ROLE_LABELS, roleLabel } from "@/lib/terms";
 
 const ROLE_COLOR: Record<string, string> = {
   super_admin: "bg-purple-100 text-purple-700",
@@ -232,7 +225,7 @@ export function AdminUsers({ currentUser }: { currentUser: User }) {
                           className={`shrink-0 text-xs ${ROLE_COLOR[u.role] ?? "bg-muted"}`}
                           variant="secondary"
                         >
-                          {ROLE_LABEL[u.role] ?? u.role}
+                          {roleLabel(u.role)}
                         </Badge>
                         {!isSelf && (
                           <div className="flex shrink-0 gap-1.5">
@@ -301,7 +294,7 @@ export function AdminUsers({ currentUser }: { currentUser: User }) {
                             {inv.email}
                           </p>
                           <p className="text-xs text-muted-foreground">
-                            {ROLE_LABEL[inv.role] ?? inv.role}
+                            {roleLabel(inv.role)}
                           </p>
                         </div>
                         <Badge className={`text-xs ${st.cls}`} variant="secondary">
@@ -499,7 +492,7 @@ function InviteDialog({
         <DialogHeader>
           <DialogTitle>Хэрэглэгч урих</DialogTitle>
           <DialogDescription>
-            Имэйлээр урилга илгээнэ. Урьсан хүн холбоосоор дансаа үүсгэнэ.
+            Урилгын холбоос үүснэ. Урьсан хүн холбоосоор орж дансаа үүсгэнэ.
           </DialogDescription>
         </DialogHeader>
 
@@ -546,7 +539,7 @@ function InviteDialog({
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="hereglegch@school.mn"
+                placeholder="name@example.mn"
                 required
                 disabled={submitting}
               />
@@ -565,26 +558,26 @@ function InviteDialog({
                 <SelectContent>
                   <SelectItem value="teacher">Багш</SelectItem>
                   <SelectItem value="parent">Эцэг эх</SelectItem>
-                  <SelectItem value="admin">Сургуулийн Админ</SelectItem>
+                  <SelectItem value="admin">{ROLE_LABELS.admin}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             {role === "teacher" && classes.length > 0 && (
               <div className="space-y-2">
-                <Label>Анги (заавал биш)</Label>
+                <Label>Бүлэг (заавал биш)</Label>
                 <Select
                   value={classId}
                   onValueChange={setClassId}
                   disabled={submitting}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Анги сонгох" />
+                    <SelectValue placeholder="Бүлэг сонгох" />
                   </SelectTrigger>
                   <SelectContent>
                     {classes.map((c) => (
                       <SelectItem key={c.id} value={String(c.id)}>
-                        {c.name} ({c.grade_level})
+                        {c.name}
                       </SelectItem>
                     ))}
                   </SelectContent>

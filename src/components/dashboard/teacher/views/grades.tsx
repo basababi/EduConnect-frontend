@@ -80,7 +80,7 @@ export function TeacherGrades() {
     });
   }, []);
 
-  // Сонгосон ангид багшийн ҮҮСГЭСЭН хичээлүүд
+  // Сонгосон бүлэгт багшийн ҮҮСГЭСЭН хичээлүүд
   const subjects = allSubjects.filter((s) => s.class_id === selectedClass);
   // Идэвхтэй хичээл: сонгосон нь байгаа эсэх, эс бөгөөс эхнийх (effect-гүй)
   const subject = subjects.some((s) => s.name === selectedSubject)
@@ -156,7 +156,7 @@ export function TeacherGrades() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div className="flex flex-wrap gap-3">
           <div>
-            <Label className="text-xs">Анги</Label>
+            <Label className="text-xs">Бүлэг</Label>
             <Select
               value={selectedClass?.toString()}
               onValueChange={(v) => setSelectedClass(parseInt(v))}
@@ -285,11 +285,11 @@ export function TeacherGrades() {
           <Plus className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
           <div>
             <p className="text-sm font-semibold text-amber-900">
-              Энэ ангид хичээл үүсгээгүй байна
+              Энэ бүлэгт хичээл үүсгээгүй байна
             </p>
             <p className="text-sm text-amber-700">
               Дүн оруулахын тулд эхлээд зүүн цэсний{" "}
-              <strong>&quot;Миний хичээлүүд&quot;</strong>-ээс тухайн ангид хичээл
+              <strong>&quot;Миний хичээлүүд&quot;</strong>-ээс тухайн бүлэгт хичээл
               үүсгэнэ үү. Дараа нь энд тэр хичээлээр дүн тавина.
             </p>
           </div>
@@ -302,7 +302,7 @@ export function TeacherGrades() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs text-muted-foreground">Ангийн дундаж</p>
+                <p className="text-xs text-muted-foreground">Бүлгийн дундаж</p>
                 <p className="text-2xl font-bold">{classAvg}%</p>
               </div>
               <TrendingUp className="h-6 w-6 text-accent" />

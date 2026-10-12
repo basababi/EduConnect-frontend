@@ -18,10 +18,10 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "EduConnect Mongolia — Сургуулийн удирдлагын платформ",
+  title: "EduConnect — Сургалтын төвийн удирдлагын платформ",
   description:
-    "Монголын ерөнхий боловсролын хувийн сургуулиудад зориулсан нэгдсэн дижитал платформ. Ирц бүртгэл, дүнгийн журнал, эцэг эх-багш чат.",
-  keywords: ["EduConnect", "сургууль", "ирц", "дүн", "Mongolia", "SaaS"],
+    "Сургалтын төвүүдэд зориулсан нэгдсэн платформ: бүлэг, сурагч, ирц, даалгавар, эцэг эх-багшийн харилцаа.",
+  keywords: ["EduConnect", "сургалтын төв", "курс", "ирц", "бүлэг", "Mongolia", "SaaS"],
   manifest: "/manifest.webmanifest",
   applicationName: "EduConnect",
   appleWebApp: {

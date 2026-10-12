@@ -36,7 +36,7 @@ const DEMO_ACCOUNTS = [
     email: "admin@school.mn",
     password: "",
     label: "Админ",
-    desc: "Сургуулийн удирдлага",
+    desc: "Төвийн удирдлага",
     icon: Shield,
     color: "bg-primary",
   },
@@ -67,10 +67,10 @@ const DEMO_ACCOUNTS = [
 ];
 
 const LEFT_PANEL_FEATURES = [
-  "Ирц бүртгэл — 30 секундэд",
-  "Дүнгийн журнал + автомат дундаж",
-  "Эцэг эх-багш real-time чат",
-  "SMS мэдэгдэл + ESIS синк",
+  "Гар утсаар ирц бүртгэх",
+  "Бүлэг, сурагчийн бүртгэл",
+  "Даалгавар, хичээлийн материал",
+  "Эцэг эх-багшийн шууд харилцаа",
 ];
 
 // Туршилтын хурдан нэвтрэлт — зөвхөн dev/demo орчинд.
@@ -136,10 +136,10 @@ export function LoginPage({ onBack, onSuccess, onRegister }: LoginPageProps) {
         <div className="relative space-y-8">
           <div>
             <h2 className="text-3xl font-bold leading-tight md:text-4xl">
-              Сургуулийн удирдлага, багш, эцэг эх, сурагч — нэг платформ
+              Төвийн удирдлага, багш, эцэг эх, сурагч — нэг платформ
             </h2>
             <p className="mt-4 text-primary-foreground/70">
-              Монголын ерөнхий боловсролын хувийн сургуулиудад зориулсан нэгдсэн дижитал шийдэл
+              Сургалтын төвүүдэд зориулсан нэгдсэн дижитал шийдэл
             </p>
           </div>
 
@@ -153,20 +153,8 @@ export function LoginPage({ onBack, onSuccess, onRegister }: LoginPageProps) {
           </div>
         </div>
 
-        {/* Bottom: Stats */}
-        <div className="relative grid grid-cols-3 gap-4 border-t border-primary-foreground/10 pt-6">
-          <div>
-            <div className="text-2xl font-bold">50+</div>
-            <div className="text-xs text-primary-foreground/60">Сургууль</div>
-          </div>
-          <div>
-            <div className="text-2xl font-bold">15K+</div>
-            <div className="text-xs text-primary-foreground/60">Сурагч</div>
-          </div>
-          <div>
-            <div className="text-2xl font-bold">99.9%</div>
-            <div className="text-xs text-primary-foreground/60">Uptime</div>
-          </div>
+        <div className="relative text-xs text-primary-foreground/50">
+          © {new Date().getFullYear()} EduConnect Mongolia
         </div>
       </div>
 
@@ -245,7 +233,7 @@ export function LoginPage({ onBack, onSuccess, onRegister }: LoginPageProps) {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="example@school.mn"
+                  placeholder="name@example.mn"
                   required
                   disabled={loading}
                   className="pl-10"
@@ -322,7 +310,7 @@ export function LoginPage({ onBack, onSuccess, onRegister }: LoginPageProps) {
 
           {/* Footer note */}
           <p className="text-center text-xs text-muted-foreground">
-            Сургуулиараа бүртгүүлэхийг хүсвэл{" "}
+            Төвөө бүртгүүлэхийг хүсвэл{" "}
             <button
               type="button"
               onClick={onRegister}
@@ -420,7 +408,7 @@ function ForgotDialog({
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="example@school.mn"
+                placeholder="name@example.mn"
                 required
                 disabled={loading}
               />

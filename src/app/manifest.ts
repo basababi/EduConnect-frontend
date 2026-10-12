@@ -5,7 +5,7 @@ export default function manifest(): MetadataRoute.Manifest {
     name: "EduConnect Mongolia",
     short_name: "EduConnect",
     description:
-      "Сургуулийн удирдлагын платформ — хуваарь, дүн, даалгавар, AI хичээлийн дагуул, карьер зөвлөгөө.",
+      "Сургалтын төвийн удирдлагын платформ — бүлэг, хуваарь, ирц, даалгавар, мессеж.",
     start_url: "/",
     display: "standalone",
     background_color: "#1b2b4b",

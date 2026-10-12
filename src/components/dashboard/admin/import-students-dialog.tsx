@@ -51,7 +51,9 @@ const COLUMN_MAP: Record<string, keyof ParsedRow> = {
   "сурагчийн код": "student_code",
   code: "student_code",
   "student code": "student_code",
+  бүлэг: "class_name",
   анги: "class_name",
+  group: "class_name",
   class: "class_name",
   "төрсөн огноо": "date_of_birth",
   "төрсөн өдөр": "date_of_birth",
@@ -151,7 +153,7 @@ export function ImportStudentsDialog({
     reader.readAsArrayBuffer(file);
   }
 
-  // Анги нэрийг id болгож хөрвүүлнэ (мөр дотор анги байхгүй бол default)
+  // Бүлгийн нэрийг id болгож хөрвүүлнэ (мөрөнд бүлэг заагаагүй бол үндсэн бүлэг)
   function resolveClassId(name?: string): number | undefined {
     if (name) {
       const found = classes.find(
@@ -187,14 +189,14 @@ export function ImportStudentsDialog({
 
   function downloadTemplate() {
     const ws = XLSX.utils.aoa_to_sheet([
-      ["Овог", "Нэр", "Сурагчийн код", "Анги", "Төрсөн огноо", "Имэйл", "Нууц үг"],
+      ["Овог", "Нэр", "Сурагчийн код", "Бүлэг", "Төрсөн огноо", "Имэйл", "Нууц үг"],
       [
         "Бат",
         "Болд",
-        "STU-2025-001",
-        classes[0]?.name ?? "10А",
+        "ST-0001",
+        classes[0]?.name ?? "Бүлэг 1",
         "2009-05-15",
-        "bat.bold@school.mn",
+        "bat.bold@example.mn",
         "nuuts123",
       ],
     ]);
@@ -215,7 +217,7 @@ export function ImportStudentsDialog({
         <DialogHeader>
           <DialogTitle>Сурагч Excel-ээс импортлох</DialogTitle>
           <DialogDescription>
-            Багана: Овог, Нэр, Сурагчийн код, Анги, Төрсөн огноо. Нэмж{" "}
+            Багана: Овог, Нэр, Сурагчийн код, Бүлэг, Төрсөн огноо. Нэмж{" "}
             <b>Имэйл + Нууц үг</b> өгвөл сурагчид нэвтрэх данс үүснэ.
           </DialogDescription>
         </DialogHeader>
@@ -294,11 +296,11 @@ export function ImportStudentsDialog({
             {classes.length > 0 && (
               <div className="space-y-2">
                 <Label className="text-xs">
-                  Default анги (мөрөнд анги байхгүй бол)
+                  Үндсэн бүлэг (мөрөнд бүлэг заагаагүй бол)
                 </Label>
                 <Select value={defaultClassId} onValueChange={setDefaultClassId}>
                   <SelectTrigger className="w-48">
-                    <SelectValue placeholder="Анги сонгох" />
+                    <SelectValue placeholder="Бүлэг сонгох" />
                   </SelectTrigger>
                   <SelectContent>
                     {classes.map((c) => (
@@ -319,7 +321,7 @@ export function ImportStudentsDialog({
                       <th className="p-2">Овог</th>
                       <th className="p-2">Нэр</th>
                       <th className="p-2">Код</th>
-                      <th className="p-2">Анги</th>
+                      <th className="p-2">Бүлэг</th>
                       <th className="p-2">Төрсөн</th>
                       <th className="p-2">Нэвтрэх</th>
                     </tr>

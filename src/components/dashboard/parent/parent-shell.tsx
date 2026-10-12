@@ -32,7 +32,6 @@ interface ParentShellProps {
   onLogout: () => void;
   children: React.ReactNode;
   unreadMessages?: number;
-  unreadNotifications?: number;
 }
 
 export function ParentShell({
@@ -42,7 +41,6 @@ export function ParentShell({
   onLogout,
   children,
   unreadMessages = 0,
-  unreadNotifications = 0,
 }: ParentShellProps) {
   return (
     <DashboardShell
@@ -54,7 +52,6 @@ export function ParentShell({
       onViewChange={(id) => onViewChange(id as ParentView)}
       onLogout={onLogout}
       unreadMessages={unreadMessages}
-      unreadNotifications={unreadNotifications}
     >
       {children}
     </DashboardShell>

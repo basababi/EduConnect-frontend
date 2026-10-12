@@ -6,7 +6,7 @@ export function Footer() {
   return (
     <footer id="contact" className="border-t border-border/50 bg-muted/30">
       <div className="container mx-auto px-4 py-12 md:py-16">
-        <div className="grid gap-8 md:grid-cols-4">
+        <div className="grid gap-8 md:grid-cols-3">
           {/* Brand */}
           <div className="md:col-span-1">
             <div className="flex items-center gap-2 mb-4">
@@ -18,7 +18,7 @@ export function Footer() {
               </span>
             </div>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              Монголын сургуулиудад зориулсан нэгдсэн дижитал платформ
+              Сургалтын төвүүдэд зориулсан удирдлагын платформ
             </p>
           </div>
 
@@ -28,16 +28,7 @@ export function Footer() {
             <ul className="space-y-2 text-sm">
               <li><a href="#features" className="text-muted-foreground hover:text-foreground transition-colors">Боломжууд</a></li>
               <li><a href="#pricing" className="text-muted-foreground hover:text-foreground transition-colors">Үнийн санал</a></li>
-              <li><a href="#" className="text-muted-foreground hover:text-foreground transition-colors">Демо үзэх</a></li>
-            </ul>
-          </div>
-
-          <div>
-            <h3 className="font-semibold text-foreground mb-3">Компани</h3>
-            <ul className="space-y-2 text-sm">
-              <li><a href="#" className="text-muted-foreground hover:text-foreground transition-colors">Бидний тухай</a></li>
-              <li><a href="#" className="text-muted-foreground hover:text-foreground transition-colors">Блог</a></li>
-              <li><a href="#" className="text-muted-foreground hover:text-foreground transition-colors">Ажлын байр</a></li>
+              <li><a href="#how" className="text-muted-foreground hover:text-foreground transition-colors">Хэрхэн эхлэх вэ</a></li>
             </ul>
           </div>
 

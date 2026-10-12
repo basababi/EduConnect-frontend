@@ -182,7 +182,7 @@ export function ParentOverview({ user, onNavigate }: Props) {
               Хүүхдийн мэдээлэл холбогдоогүй байна
             </p>
             <p className="max-w-xs text-center text-sm text-muted-foreground/70">
-              Сургуулийн админтай холбогдож хүүхдийн бүртгэлийг холбуулна уу.
+              Төвийн админтай холбогдож хүүхдийн бүртгэлийг холбуулна уу.
             </p>
           </CardContent>
         </Card>

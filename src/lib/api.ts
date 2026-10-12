@@ -1,3 +1,5 @@
+import type { FeatureFlags } from "@/lib/features";
+
 const API_ORIGIN = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
 export const API_BASE = `${API_ORIGIN}/api/v1`;
 export const GOOGLE_AUTH_URL = `${API_BASE}/auth/google`;
@@ -33,6 +35,12 @@ export function getStoredUser(): User | null {
   if (typeof window === "undefined") return null;
   const u = localStorage.getItem(USER_KEY);
   return u ? (JSON.parse(u) as User) : null;
+}
+
+/** Токенуудыг хөндөлгүй хадгалсан хэрэглэгчийг шинэчилнэ (/auth/me-ийн хариугаар) */
+export function updateStoredUser(user: User) {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(USER_KEY, JSON.stringify(user));
 }
 
 // ===== HTTP client =====
@@ -214,6 +222,14 @@ export const authApi = {
 };
 
 // ===== Types =====
+/** Хэрэглэгчийн харьяалагдах төв (backend: school). `features` — асаасан нэмэлт боломжууд. */
+export interface TenantSummary {
+  id: number;
+  name: string;
+  org_type?: "training_center" | "school";
+  features?: FeatureFlags;
+}
+
 export interface User {
   id: number;
   email: string;
@@ -223,7 +239,7 @@ export interface User {
   school_id: number;
   phone?: string | null;
   is_active?: boolean;
-  school?: { id: number; name: string } | null;
+  school?: TenantSummary | null;
 }
 
 export interface LoginResponse {
@@ -475,6 +491,9 @@ export interface School {
   phone: string | null;
   address: string | null;
   director_name: string | null;
+  org_type?: "training_center" | "school";
+  features?: FeatureFlags;
+  status?: string;
   is_active: boolean;
   created_at: string;
 }
@@ -681,11 +700,18 @@ export interface CreateEventDto {
 
 // ===== Domain API wrappers (нэг эх сурвалж) =====
 export const registrationApi = {
+  // Backend хариу: { school, admin_invite } — урилгын холбоосыг супер админ админд дамжуулна
   registerSchool: (dto: RegisterSchoolDto) =>
-    api.post<{ school: School; admin: User; invitation?: Invitation }>(
-      "/registration/school",
-      dto,
-    ),
+    api.post<{
+      school: { id: number; name: string; status: string };
+      admin_invite?: {
+        id: number;
+        email: string;
+        role: string;
+        token: string;
+        invite_link: string;
+      };
+    }>("/registration/school", dto),
   signup: (dto: {
     school_name: string;
     admin_first_name: string;
@@ -721,7 +747,7 @@ export const schoolsApi = {
   get: (id: number) => api.get<School>(`/schools/${id}`),
   create: (dto: Partial<School> & { name: string }) =>
     api.post<School>("/schools", dto),
-  update: (id: number, dto: Partial<School>) =>
+  update: (id: number, dto: Partial<Pick<School, "name" | "email" | "phone" | "address" | "director_name" | "org_type" | "features">>) =>
     api.patch<School>(`/schools/${id}`, dto),
   remove: (id: number) => api.delete<void>(`/schools/${id}`),
   restore: (id: number) => api.post<School>(`/schools/${id}/restore`),

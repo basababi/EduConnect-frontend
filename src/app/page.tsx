@@ -5,7 +5,7 @@ import { Header } from "@/components/landing/header";
 import { Hero } from "@/components/landing/hero";
 import { Features } from "@/components/landing/features";
 import { Pricing } from "@/components/landing/pricing";
-import { Testimonials } from "@/components/landing/testimonials";
+import { HowItWorks } from "@/components/landing/how-it-works";
 import { Footer } from "@/components/landing/footer";
 import { LoginPage } from "@/components/landing/login-page";
 import { RegisterPage } from "@/components/landing/register-page";
@@ -54,7 +54,34 @@ import { AdminExams } from "@/components/dashboard/admin/views/exams";
 import { SuperAdminSchools } from "@/components/dashboard/admin/views/schools";
 import { AdminReports } from "@/components/dashboard/admin/views/reports";
 import { AnnouncementsView } from "@/components/dashboard/announcements-view";
-import { getStoredUser, type User } from "@/lib/api";
+import { authApi, getStoredUser, updateStoredUser, type User } from "@/lib/api";
+import { hasFeature, type FeatureKey } from "@/lib/features";
+
+// Төвд асаагаагүй боломжийн дэлгэцийг (хуучин холбоос, хадгалсан төлөвөөр) нээхээс сэргийлнэ.
+// Жинхэнэ хамгаалалт backend-д — энэ нь хоосон/алдаатай дэлгэц харуулахгүйн тулд.
+const STUDENT_VIEW_FEATURE: Partial<Record<StudentView, FeatureKey>> = {
+  "ai-tutor": "ai_tutor",
+  "ai-chat": "ai_chat",
+  career: "career",
+  exams: "public_exams",
+};
+const TEACHER_VIEW_FEATURE: Partial<Record<TeacherView, FeatureKey>> = {
+  "ai-reviews": "ai_tutor",
+};
+const ADMIN_VIEW_FEATURE: Partial<Record<AdminView, FeatureKey>> = {
+  universities: "career",
+  exams: "public_exams",
+};
+
+/** Идэвхтэй дэлгэц нь унтраасан боломжийнх бол нүүр рүү буцаана */
+function allowedView<V extends string>(
+  user: User,
+  current: V,
+  map: Partial<Record<V, FeatureKey>>,
+): V | "overview" {
+  const feature = map[current];
+  return feature && !hasFeature(user, feature) ? "overview" : current;
+}
 
 type AppView = "landing" | "login" | "register" | "dashboard";
 
@@ -63,19 +90,28 @@ export default function Home() {
   const [user, setUser] = useState<User | null>(null);
 
   // Teacher view state
-  const [teacherView, setTeacherView] = useState<TeacherView>("overview");
+  const [teacherViewState, setTeacherView] = useState<TeacherView>("overview");
   // Student view state
-  const [studentView, setStudentView] = useState<StudentView>("overview");
+  const [studentViewState, setStudentView] = useState<StudentView>("overview");
   // Parent view state
   const [parentView, setParentView] = useState<ParentView>("overview");
   // Admin view state
-  const [adminView, setAdminView] = useState<AdminView>("overview");
+  const [adminViewState, setAdminView] = useState<AdminView>("overview");
 
   useEffect(() => {
     const stored = getStoredUser();
     if (stored) {
       setUser(stored);
       setView("dashboard");
+      // Төвийн тохиргоо (асаасан боломжууд), хэрэглэгчийн нэр зэрэг өөрчлөгдсөн байж
+      // болно — серверээс шинэчилнэ. Токен хүчингүй бол api давхарга өөрөө гаргана.
+      authApi
+        .me()
+        .then((fresh) => {
+          updateStoredUser(fresh);
+          setUser(fresh);
+        })
+        .catch(() => {});
     }
 
     const handleLogout = () => {
@@ -107,7 +143,7 @@ export default function Home() {
     );
   }
 
-  // ── Register (сургууль өөрөө бүртгүүлэх) ──
+  // ── Register (төв өөрөө бүртгүүлэх) ──
   if (view === "register") {
     return (
       <RegisterPage
@@ -124,6 +160,7 @@ export default function Home() {
 
     // TEACHER
     if (role === "teacher") {
+      const teacherView = allowedView(user, teacherViewState, TEACHER_VIEW_FEATURE);
       return (
         <TeacherShell
           user={user}
@@ -150,13 +187,13 @@ export default function Home() {
 
     // STUDENT
     if (role === "student") {
+      const studentView = allowedView(user, studentViewState, STUDENT_VIEW_FEATURE);
       return (
         <StudentShell
           user={user}
           activeView={studentView}
           onViewChange={setStudentView}
           onLogout={handleLogout}
-          unreadNotifications={0}
         >
           {studentView === "overview" && (
             <StudentOverview user={user} onNavigate={setStudentView} />
@@ -184,7 +221,6 @@ export default function Home() {
           activeView={parentView}
           onViewChange={setParentView}
           onLogout={handleLogout}
-          unreadNotifications={0}
         >
           {parentView === "overview" && (
             <ParentOverview user={user} onNavigate={setParentView} />
@@ -199,13 +235,13 @@ export default function Home() {
 
     // ADMIN / SUPER_ADMIN
     if (role === "admin" || role === "super_admin") {
+      const adminView = allowedView(user, adminViewState, ADMIN_VIEW_FEATURE);
       return (
         <AdminShell
           user={user}
           activeView={adminView}
           onViewChange={setAdminView}
           onLogout={handleLogout}
-          unreadNotifications={0}
         >
           {adminView === "overview" && (
             <AdminOverview user={user} onNavigate={setAdminView} />
@@ -226,12 +262,12 @@ export default function Home() {
   // ── Landing page ──
   return (
     <div className="flex min-h-screen flex-col">
-      <Header onLogin={() => setView("login")} />
+      <Header onLogin={() => setView("login")} onRegister={() => setView("register")} />
       <main className="flex-1">
-        <Hero onLogin={() => setView("login")} />
+        <Hero onLogin={() => setView("login")} onRegister={() => setView("register")} />
         <Features />
-        <Pricing onLogin={() => setView("login")} />
-        <Testimonials />
+        <HowItWorks />
+        <Pricing onRegister={() => setView("register")} />
       </main>
       <Footer />
     </div>

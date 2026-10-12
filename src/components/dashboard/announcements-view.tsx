@@ -35,9 +35,9 @@ const ROLE_LABEL: Record<string, string> = {
 };
 
 function audienceLabel(a: Announcement): string {
-  if (a.target_type === "school") return "Бүх сургууль";
-  if (a.target_type === "role") return ROLE_LABEL[a.target_role ?? ""] ?? "Бүлэг";
-  if (a.target_type === "class") return "Анги";
+  if (a.target_type === "school") return "Бүх хэрэглэгч";
+  if (a.target_type === "role") return ROLE_LABEL[a.target_role ?? ""] ?? "Тодорхой дүр";
+  if (a.target_type === "class") return "Бүлэг";
   return "Бүгд";
 }
 
@@ -73,7 +73,7 @@ export function AnnouncementsView() {
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-primary">Зарлал</h1>
-          <p className="mt-0.5 text-sm text-muted-foreground">Сургуулийн мэдээ, зарлал</p>
+          <p className="mt-0.5 text-sm text-muted-foreground">Төвийн мэдээ, зарлал</p>
         </div>
         {canCreate && (
           <Button variant="amber" className="gap-2" onClick={() => setOpen(true)}>
@@ -164,7 +164,7 @@ function CreateDialog({
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSubmitting(true);
-    // "school" = бүх сургууль; бусад нь role зорилт
+    // "school" = төвийн бүх хэрэглэгч; бусад нь role зорилт
     const payload =
       audience === "school"
         ? { title: title.trim(), body: body.trim(), target_type: "school" as const }
@@ -201,7 +201,7 @@ function CreateDialog({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Шинэ зарлал</DialogTitle>
-          <DialogDescription>Сонгосон бүлэгт зарлал нийтэлнэ.</DialogDescription>
+          <DialogDescription>Сонгосон хүлээн авагчдад зарлал нийтэлнэ.</DialogDescription>
         </DialogHeader>
         {done ? (
           <div className="flex flex-col items-center gap-3 py-8">
@@ -238,7 +238,7 @@ function CreateDialog({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="school">Бүх сургууль</SelectItem>
+                  <SelectItem value="school">Бүх хэрэглэгч</SelectItem>
                   <SelectItem value="teacher">Багш нар</SelectItem>
                   <SelectItem value="parent">Эцэг эх</SelectItem>
                   <SelectItem value="student">Сурагчид</SelectItem>

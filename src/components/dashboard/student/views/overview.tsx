@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import {
-  BookOpen, Heart, Briefcase, FileText, AlertTriangle,
+  BookOpen, Briefcase, FileText, AlertTriangle,
   TrendingUp, CheckCircle2, Clock, Sparkles, ArrowRight, CalendarDays,
   BookMarked, MapPin,
 } from "lucide-react";
@@ -12,6 +12,7 @@ import {
 } from "@/lib/api";
 import type { StudentView } from "@/components/dashboard/student/student-shell";
 import { StatCard, SectionCard, EmptyState, Pill } from "@/components/ui/dashboard-ui";
+import { hasFeature } from "@/lib/features";
 
 interface Props {
   user: User;
@@ -70,6 +71,15 @@ export function StudentOverview({ user, onNavigate }: Props) {
     .slice(0, 4);
   const overdueAssignments = assignments.filter((a) => a.is_overdue);
 
+  // Төвд асаасан нэмэлт боломжууд — асаагаагүйг нь огт дурдахгүй
+  const aiTutor = hasFeature(user, "ai_tutor");
+  const extras = (
+    [
+      { view: "ai-tutor", feature: "ai_tutor", icon: BookOpen, title: "Хичээлийн Дагуул", desc: "Алхам алхмаар заалт, дасгал, шалгалт" },
+      { view: "career", feature: "career", icon: Briefcase, title: "Карьер Зөвлөгөө", desc: "Тохирсон мэргэжил, их сургуулийн зам" },
+    ] as const
+  ).filter((x) => hasFeature(user, x.feature));
+
   if (loading) {
     return (
       <div className="space-y-6 p-4 md:p-6">
@@ -101,18 +111,20 @@ export function StudentOverview({ user, onNavigate }: Props) {
             </p>
             {studentProfile?.class && (
               <span className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-xs font-medium ring-1 ring-white/15">
-                {studentProfile.class.name} · {studentProfile.class.grade_level}-р анги
+                {studentProfile.class.name}
               </span>
             )}
           </div>
-          <button
-            onClick={() => onNavigate("ai-tutor")}
-            className="group flex items-center gap-2 rounded-xl bg-amber px-4 py-2.5 text-sm font-semibold text-amber-foreground shadow-sm transition hover:brightness-105"
-          >
-            <Sparkles className="size-4" />
-            AI Дагуул нээх
-            <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
-          </button>
+          {aiTutor && (
+            <button
+              onClick={() => onNavigate("ai-tutor")}
+              className="group flex items-center gap-2 rounded-xl bg-amber px-4 py-2.5 text-sm font-semibold text-amber-foreground shadow-sm transition hover:brightness-105"
+            >
+              <Sparkles className="size-4" />
+              AI Дагуул нээх
+              <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
+            </button>
+          )}
         </div>
       </div>
 
@@ -130,15 +142,19 @@ export function StudentOverview({ user, onNavigate }: Props) {
                   <strong>{s.subject}</strong> ({Math.round(s.average_percentage)}%)
                 </span>
               ))}
-              — AI Хичээлийн Дагуул ашиглан хоцрогдлоо нөхөөрэй.
+              {aiTutor
+                ? "— AI Хичээлийн Дагуул ашиглан хоцрогдлоо нөхөөрэй."
+                : "— багшаасаа нэмэлт тусламж аваарай."}
             </p>
           </div>
-          <button
-            onClick={() => onNavigate("ai-tutor")}
-            className="shrink-0 self-center rounded-lg bg-amber-500 px-3 py-2 text-xs font-semibold text-white transition hover:bg-amber-600"
-          >
-            Дагуул нээх
-          </button>
+          {aiTutor && (
+            <button
+              onClick={() => onNavigate("ai-tutor")}
+              className="shrink-0 self-center rounded-lg bg-amber-500 px-3 py-2 text-xs font-semibold text-white transition hover:bg-amber-600"
+            >
+              Дагуул нээх
+            </button>
+          )}
         </div>
       )}
 
@@ -217,7 +233,7 @@ export function StudentOverview({ user, onNavigate }: Props) {
             icon={TrendingUp}
             title="Хичээл тус бүрийн дүн"
             action={
-              studentProfile?.id ? (
+              studentProfile?.id && hasFeature(user, "academic_terms") ? (
                 <button
                   onClick={() =>
                     window.open(`/report-card/${studentProfile.id}`, "_blank")
@@ -258,12 +274,14 @@ export function StudentOverview({ user, onNavigate }: Props) {
           icon={Clock}
           title="Ойрын даалгаврууд"
           action={
-            <button
-              onClick={() => onNavigate("ai-tutor")}
-              className="text-xs font-medium text-primary transition hover:underline"
-            >
-              Тусламж авах
-            </button>
+            aiTutor ? (
+              <button
+                onClick={() => onNavigate("ai-tutor")}
+                className="text-xs font-medium text-primary transition hover:underline"
+              >
+                Тусламж авах
+              </button>
+            ) : undefined
           }
           bodyClassName="space-y-2"
         >
@@ -291,22 +309,19 @@ export function StudentOverview({ user, onNavigate }: Props) {
         </SectionCard>
       </div>
 
-      {/* AI feature cards */}
+      {/* Нэмэлт боломжууд — зөвхөн төвд асаасан нь (өмнө нь дардаггүй товч, байхгүй
+          "Сэтгэл зүйч" карт байсныг хассан) */}
+      {extras.length > 0 && (
       <div>
         <h2 className="mb-3 flex items-center gap-2 text-base font-semibold text-foreground">
           <Sparkles className="size-4 text-amber" />
-          AI Дагуул функцүүд
+          AI Дагуул
         </h2>
         <div className="grid gap-4 sm:grid-cols-3">
-          {(
-            [
-              { view: "ai-tutor", icon: BookOpen, title: "Хичээлийн Дагуул", desc: "Алхам алхмаар заалт, дасгал, шалгалт" },
-              { view: "wellbeing", icon: Heart, title: "Сэтгэл Зүйч", desc: "Хувийн, нууцлалтай яриа, дэмжлэг" },
-              { view: "career", icon: Briefcase, title: "Карьер Зөвлөгөө", desc: "Тохирсон мэргэжил, сургуулийн зам" },
-            ] as const
-          ).map(({ view, icon: Icon, title, desc }) => (
+          {extras.map(({ view, icon: Icon, title, desc }) => (
             <button
               key={view}
+              onClick={() => onNavigate(view)}
               className="group rounded-2xl border border-border bg-card p-5 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-amber/40 hover:shadow-md"
             >
               <div className="mb-3 flex size-11 items-center justify-center rounded-xl bg-primary text-primary-foreground transition-colors group-hover:bg-amber group-hover:text-amber-foreground">
@@ -321,6 +336,7 @@ export function StudentOverview({ user, onNavigate }: Props) {
           ))}
         </div>
       </div>
+      )}
     </div>
   );
 }

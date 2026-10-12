@@ -33,12 +33,13 @@ const SECTIONS: ShellNavSection[] = [
     ],
   },
   {
+    // Төв бүрээр асаадаг нэмэлт боломжууд — асаагаагүй бол энэ хэсэг бүхэлдээ харагдахгүй
     label: "AI Дагуул",
     items: [
-      { id: "ai-tutor", label: "Хичээлийн Дагуул", icon: BookOpen, ai: true, primary: true, shortLabel: "Дагуул" },
-      { id: "exams", label: "Нийтийн шалгалт", icon: Trophy, shortLabel: "Шалгалт" },
-      { id: "career", label: "Карьер Зөвлөгөө", icon: Briefcase, ai: true, shortLabel: "Карьер" },
-      { id: "ai-chat", label: "AI Туслах", icon: Bot, ai: true },
+      { id: "ai-tutor", label: "Хичээлийн Дагуул", icon: BookOpen, ai: true, primary: true, shortLabel: "Дагуул", feature: "ai_tutor" },
+      { id: "exams", label: "Нийтийн шалгалт", icon: Trophy, shortLabel: "Шалгалт", feature: "public_exams" },
+      { id: "career", label: "Карьер Зөвлөгөө", icon: Briefcase, ai: true, shortLabel: "Карьер", feature: "career" },
+      { id: "ai-chat", label: "AI Туслах", icon: Bot, ai: true, feature: "ai_chat" },
     ],
   },
 ];
@@ -50,7 +51,6 @@ interface StudentShellProps {
   onLogout: () => void;
   children: React.ReactNode;
   unreadMessages?: number;
-  unreadNotifications?: number;
 }
 
 export function StudentShell({
@@ -60,7 +60,6 @@ export function StudentShell({
   onLogout,
   children,
   unreadMessages = 0,
-  unreadNotifications = 0,
 }: StudentShellProps) {
   return (
     <DashboardShell
@@ -72,7 +71,6 @@ export function StudentShell({
       onViewChange={(id) => onViewChange(id as StudentView)}
       onLogout={onLogout}
       unreadMessages={unreadMessages}
-      unreadNotifications={unreadNotifications}
     >
       {children}
     </DashboardShell>

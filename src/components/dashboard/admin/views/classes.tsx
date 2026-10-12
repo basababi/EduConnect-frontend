@@ -52,6 +52,7 @@ import {
   type User,
   type CreateClassDto,
 } from "@/lib/api";
+import { groupSubtitle } from "@/lib/terms";
 
 export function AdminClasses() {
   const [classes, setClasses] = useState<ClassRoom[]>([]);
@@ -94,10 +95,10 @@ export function AdminClasses() {
     students.filter((s) => s.class_id === classId).length;
 
   async function handleDelete(c: ClassRoom) {
-    if (!confirm(`"${c.name}" ангийг устгах уу?`)) return;
+    if (!confirm(`"${c.name}" бүлгийг устгах уу?`)) return;
     try {
       await classesApi.remove(c.id);
-      toast.success("Анги устгагдлаа");
+      toast.success("Бүлэг устгагдлаа");
       setClasses((prev) => prev.filter((x) => x.id !== c.id));
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Устгаж чадсангүй");
@@ -108,9 +109,9 @@ export function AdminClasses() {
     <div className="animate-in-rise space-y-6 p-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-primary">Ангиуд</h1>
+          <h1 className="text-2xl font-bold text-primary">Бүлгүүд</h1>
           <p className="mt-0.5 text-sm text-muted-foreground">
-            Нийт {classes.length} анги · {classes.filter((c) => c.is_active).length} идэвхтэй
+            Нийт {classes.length} бүлэг · {classes.filter((c) => c.is_active).length} идэвхтэй
           </p>
         </div>
         <div className="flex gap-2">
@@ -131,7 +132,7 @@ export function AdminClasses() {
             className="gap-2"
           >
             <Plus className="h-4 w-4" />
-            Анги нэмэх
+            Бүлэг нэмэх
           </Button>
         </div>
       </div>
@@ -141,7 +142,7 @@ export function AdminClasses() {
         <Input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Анги хайх..."
+          placeholder="Бүлэг хайх..."
           className="pl-9"
         />
       </div>
@@ -156,9 +157,9 @@ export function AdminClasses() {
         <Card>
           <CardContent className="flex flex-col items-center justify-center gap-2 py-14">
             <BookOpen className="h-10 w-10 text-muted-foreground/40" />
-            <p className="text-sm font-medium text-muted-foreground">Анги олдсонгүй</p>
+            <p className="text-sm font-medium text-muted-foreground">Бүлэг олдсонгүй</p>
             <p className="text-xs text-muted-foreground/70">
-              Эхний ангиа &quot;Анги нэмэх&quot; товчоор үүсгээрэй
+              Эхний бүлгээ &quot;Бүлэг нэмэх&quot; товчоор үүсгээрэй
             </p>
           </CardContent>
         </Card>
@@ -203,7 +204,7 @@ export function AdminClasses() {
                 <div>
                   <p className="font-semibold text-foreground">{c.name}</p>
                   <p className="text-xs text-muted-foreground">
-                    {c.grade_level}-р анги · {c.academic_year}
+                    {groupSubtitle(c)}
                   </p>
                   {c.teacher && (
                     <p className="mt-0.5 text-xs text-muted-foreground/80">
@@ -254,7 +255,7 @@ export function AdminClasses() {
   );
 }
 
-// ── Анги үүсгэх/засах диалог ──
+// ── Бүлэг үүсгэх/засах диалог ──
 function ClassDialog({
   open,
   onOpenChange,
@@ -291,10 +292,10 @@ function ClassDialog({
     try {
       if (editing) {
         await classesApi.update(editing.id, dto);
-        toast.success("Анги шинэчлэгдлээ");
+        toast.success("Бүлэг шинэчлэгдлээ");
       } else {
         await classesApi.create(dto);
-        toast.success("Анги үүслээ");
+        toast.success("Бүлэг үүслээ");
       }
       onSaved();
       onOpenChange(false);
@@ -309,17 +310,17 @@ function ClassDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>{editing ? "Анги засах" : "Шинэ анги"}</DialogTitle>
-          <DialogDescription>Ангийн мэдээллийг бөглөнө үү.</DialogDescription>
+          <DialogTitle>{editing ? "Бүлэг засах" : "Шинэ бүлэг"}</DialogTitle>
+          <DialogDescription>Бүлгийн мэдээллийг бөглөнө үү.</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="cls-name">Ангийн нэр</Label>
+            <Label htmlFor="cls-name">Бүлгийн нэр</Label>
             <Input
               id="cls-name"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="9А"
+              placeholder="Англи хэл — Анхан шат"
               required
               disabled={submitting}
             />
@@ -331,13 +332,13 @@ function ClassDialog({
                 id="cls-grade"
                 value={gradeLevel}
                 onChange={(e) => setGradeLevel(e.target.value)}
-                placeholder="9"
+                placeholder="Анхан"
                 required
                 disabled={submitting}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="cls-year">Хичээлийн жил</Label>
+              <Label htmlFor="cls-year">Он</Label>
               <Input
                 id="cls-year"
                 type="number"
@@ -349,7 +350,7 @@ function ClassDialog({
             </div>
           </div>
           <div className="space-y-2">
-            <Label>Анги даасан багш (заавал биш)</Label>
+            <Label>Багш (заавал биш)</Label>
             <Select value={teacherId} onValueChange={setTeacherId} disabled={submitting}>
               <SelectTrigger>
                 <SelectValue placeholder="Багш сонгох" />
@@ -382,7 +383,7 @@ function ClassDialog({
   );
 }
 
-// ── Ангийн дэлгэрэнгүй + сурагч удирдах (Sheet) ──
+// ── Бүлгийн дэлгэрэнгүй + сурагч удирдах (Sheet) ──
 function ClassDetailSheet({
   cls,
   onOpenChange,
@@ -451,7 +452,7 @@ function ClassDetailContent({
           {cls.name}
         </SheetTitle>
         <SheetDescription>
-          {cls.grade_level}-р анги · {cls.academic_year} · {students.length} сурагч
+          {[groupSubtitle(cls), `${students.length} сурагч`].filter(Boolean).join(" · ")}
         </SheetDescription>
       </SheetHeader>
 

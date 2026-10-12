@@ -1,32 +1,33 @@
 "use client";
 
 import { Card, CardContent } from "@/components/ui/card";
-import { BookOpen, GraduationCap, MessageSquare, Users } from "lucide-react";
+import { Building2, GraduationCap, HeartHandshake, UserRound } from "lucide-react";
 
+// Зөвхөн системд БОДИТООР байгаа боломжийг бичнэ — хэрэгжээгүй зүйл амлахгүй.
 const FEATURES = [
   {
-    icon: Users,
-    title: "Сургуулийн удирдлага",
-    desc: "Хэрэглэгч, анги, багшийн мэдээллийг нэг дор удирдах",
-    points: ["Multi-tenant тусгаарлалт", "RBAC эрхийн хяналт", "Статистик тайлан"],
+    icon: Building2,
+    title: "Төвийн удирдлага",
+    desc: "Бүлэг, багш, сурагчаа нэг дороос удирдана",
+    points: ["Бүлэг, багшийн хуваарилалт", "Excel-ээс сурагч импортлох", "Ирц, гүйцэтгэлийн тайлан"],
   },
   {
     icon: GraduationCap,
     title: "Багш",
-    desc: "Ирц бүртгэх, дүн оруулах, даалгавар үүсгэх",
-    points: ["30 секундэд ирц", "Дундаж автоматаар", "Файл хавсралт"],
+    desc: "Ирц авах, даалгавар өгөх, материал хуваалцах",
+    points: ["Гар утсаар ирц бүртгэх", "Даалгавар шалгах, дүгнэх", "Хичээлийн материал"],
   },
   {
-    icon: BookOpen,
+    icon: HeartHandshake,
     title: "Эцэг эх",
-    desc: "Хүүхдийн ирц, дүн харах, багштай чат хийх",
-    points: ["Real-time мэдэгдэл", "SMS fallback", "Ажлын цагийн хязгаар"],
+    desc: "Хүүхдийнхээ ирц, ахицыг харж, багштай холбогдоно",
+    points: ["Ирц, үнэлгээг харах", "Багштай шууд мессеж", "Зарлал, мэдээ"],
   },
   {
-    icon: MessageSquare,
+    icon: UserRound,
     title: "Сурагч",
-    desc: "Хуваарь, даалгавар, өөрийн дүн харах",
-    points: ["To-Do жагсаалт", "Хугацаа сануулга", "Хичээлийн хуваарь"],
+    desc: "Хуваарь, даалгавар, материалаа нэг дороос",
+    points: ["Хичээлийн хуваарь", "Даалгавар илгээх", "Утсанд суулгадаг апп"],
   },
 ];
 
@@ -36,13 +37,13 @@ export function Features() {
       <div className="container mx-auto px-4">
         <div className="mx-auto max-w-2xl text-center mb-16">
           <p className="text-sm font-medium text-amber mb-3 tracking-wide uppercase">
-            Бүх талуудын хэрэгцээ
+            Боломжууд
           </p>
           <h2 className="text-3xl font-semibold tracking-tight md:text-4xl">
-            Хэн бүхэнд зориулсан шийдэл
+            Хүн бүрт өөрийн гэсэн портал
           </h2>
           <p className="mt-4 text-muted-foreground">
-            Сургуулийн бүх талуудын хэрэгцээг нэг платформд нэгтгэв
+            Төвийн админ, багш, эцэг эх, сурагч тус бүр өөрт хэрэгтэй зүйлээ л харна
           </p>
         </div>
 

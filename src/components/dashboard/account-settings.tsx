@@ -42,6 +42,7 @@ import {
   type Term,
   type RolloverPreview,
 } from "@/lib/api";
+import { hasFeature } from "@/lib/features";
 
 function currentAcademicYear(): number {
   const now = new Date();
@@ -51,17 +52,19 @@ function currentAcademicYear(): number {
 export function AccountSettings() {
   const stored = getStoredUser();
   const isAdmin = stored?.role === "admin" || stored?.role === "super_admin";
+  // Улирал, хичээлийн жил дэвших нь ЕБС-ийн ойлголт — сургалтын төвд default-оор нуугдана
+  const showTerms = isAdmin && hasFeature(stored, "academic_terms");
   return (
     <div className="animate-in-rise space-y-6 p-6">
       <div>
         <h1 className="text-2xl font-bold text-primary">Тохиргоо</h1>
         <p className="mt-0.5 text-sm text-muted-foreground">
-          Хувийн мэдээлэл, аюулгүй байдал{isAdmin ? ", улирал" : ""}
+          Хувийн мэдээлэл, аюулгүй байдал{showTerms ? ", улирал" : ""}
         </p>
       </div>
       {stored && <ProfileCard user={stored} />}
-      {isAdmin && <TermsCard />}
-      {isAdmin && <RolloverCard />}
+      {showTerms && <TermsCard />}
+      {showTerms && <RolloverCard />}
       <SecurityCard user={stored} />
       <SessionsCard />
     </div>

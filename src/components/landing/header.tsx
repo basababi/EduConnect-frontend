@@ -6,9 +6,10 @@ import { useState } from "react";
 
 interface HeaderProps {
   onLogin: () => void;
+  onRegister: () => void;
 }
 
-export function Header({ onLogin }: HeaderProps) {
+export function Header({ onLogin, onRegister }: HeaderProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const navLinks = [
@@ -54,10 +55,10 @@ export function Header({ onLogin }: HeaderProps) {
           </Button>
           <Button
             variant="amber"
-            onClick={onLogin}
+            onClick={onRegister}
             className="text-sm font-medium shadow-sm"
           >
-            Демо үзэх
+            Төвөө бүртгүүлэх
           </Button>
         </div>
 
@@ -96,9 +97,9 @@ export function Header({ onLogin }: HeaderProps) {
               </Button>
               <Button
                 variant="amber"
-                onClick={() => { onLogin(); setMobileOpen(false); }}
+                onClick={() => { onRegister(); setMobileOpen(false); }}
               >
-                Демо үзэх
+                Төвөө бүртгүүлэх
               </Button>
             </div>
           </nav>

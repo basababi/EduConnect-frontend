@@ -88,14 +88,14 @@ export function TeacherStudents() {
         <div>
           <h1 className="text-2xl font-bold text-primary">Сурагчид</h1>
           <p className="mt-0.5 text-sm text-muted-foreground">
-            Ангийн сурагчдыг харах, нэмэх
+            Бүлгийн сурагчдыг харах, нэмэх
           </p>
         </div>
         <div className="flex items-center gap-2">
           {!loadingClasses && classes.length > 0 && (
             <Select value={classId} onValueChange={setClassId}>
               <SelectTrigger className="w-36">
-                <SelectValue placeholder="Анги" />
+                <SelectValue placeholder="Бүлэг" />
               </SelectTrigger>
               <SelectContent>
                 {classes.map((c) => (
@@ -121,9 +121,9 @@ export function TeacherStudents() {
         <Card>
           <CardContent className="flex flex-col items-center justify-center gap-2 py-16">
             <Users className="h-10 w-10 text-muted-foreground/40" />
-            <p className="text-sm text-muted-foreground">Танд хариуцсан анги алга</p>
+            <p className="text-sm text-muted-foreground">Танд хариуцсан бүлэг алга</p>
             <p className="text-xs text-muted-foreground/70">
-              Сургуулийн админ танд анги хуваарилна
+              Төвийн админ танд бүлэг хуваарилна
             </p>
           </CardContent>
         </Card>

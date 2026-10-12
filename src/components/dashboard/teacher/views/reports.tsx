@@ -114,7 +114,7 @@ export function TeacherReports() {
         <Card>
           <CardContent className="flex flex-col items-center justify-center gap-2 py-16">
             <Activity className="h-10 w-10 text-muted-foreground/40" />
-            <p className="text-sm text-muted-foreground">Тайлан гаргах анги алга</p>
+            <p className="text-sm text-muted-foreground">Тайлан гаргах бүлэг алга</p>
           </CardContent>
         </Card>
       </div>
@@ -127,7 +127,7 @@ export function TeacherReports() {
         <div>
           <h1 className="text-2xl font-bold text-primary">Тайлан &amp; Аналитик</h1>
           <p className="mt-0.5 text-sm text-muted-foreground">
-            Ангийн гүйцэтгэл, ирц, эрсдэлтэй сурагчид
+            Бүлгийн гүйцэтгэл, ирц, эрсдэлтэй сурагчид
           </p>
         </div>
         <Select value={classId} onValueChange={setClassId}>
@@ -152,7 +152,7 @@ export function TeacherReports() {
           </div>
           <div className="flex-1">
             <p className="font-semibold text-red-900">
-              Энэ ангид {classAtRisk.length} сурагч анхаарал шаардлагатай
+              Энэ бүлэгт {classAtRisk.length} сурагч анхаарал шаардлагатай
             </p>
             <p className="mt-0.5 text-sm text-red-700">
               Дүн эсвэл ирц доогуур байна — AI шинжилгээгээр эрсдэлтэй гэж тэмдэглэв.
@@ -165,7 +165,7 @@ export function TeacherReports() {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Metric
           icon={TrendingUp}
-          label="Ангийн дундаж"
+          label="Бүлгийн дундаж"
           value={perf ? `${perf.class_average}%` : "—"}
           tone="bg-blue-100 text-blue-600"
           loading={loadingData}

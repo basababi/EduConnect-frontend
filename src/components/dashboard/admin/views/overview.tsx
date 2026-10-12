@@ -15,14 +15,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { api, type User, type ClassRoom, type Student, type AttendanceSummary } from "@/lib/api";
 import type { AdminView } from "@/components/dashboard/admin/admin-shell";
-
-const ROLE_LABEL: Record<string, string> = {
-  super_admin: "Супер Админ",
-  admin: "Сургуулийн Админ",
-  teacher: "Багш",
-  parent: "Эцэг эх",
-  student: "Сурагч",
-};
+import { groupSubtitle, roleLabel } from "@/lib/terms";
 
 const ROLE_COLOR: Record<string, string> = {
   super_admin: "bg-purple-100 text-purple-700",
@@ -149,7 +142,7 @@ export function AdminOverview({ user, onNavigate }: Props) {
               <div>
                 <p className="text-xs text-gray-500">Нийт сурагч</p>
                 <p className="mt-1 text-3xl font-bold text-[#1B2B4B]">{studentCount}</p>
-                <p className="mt-1 text-xs text-gray-500">{classes.length} анги</p>
+                <p className="mt-1 text-xs text-gray-500">{classes.length} бүлэг</p>
               </div>
               <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-100">
                 <GraduationCap className="h-6 w-6 text-amber-600" />
@@ -162,7 +155,7 @@ export function AdminOverview({ user, onNavigate }: Props) {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs text-gray-500">Идэвхтэй анги</p>
+                <p className="text-xs text-gray-500">Идэвхтэй бүлэг</p>
                 <p className="mt-1 text-3xl font-bold text-[#1B2B4B]">
                   {classes.filter((c) => c.is_active).length}
                 </p>
@@ -228,7 +221,7 @@ export function AdminOverview({ user, onNavigate }: Props) {
                   className={`text-xs shrink-0 ${ROLE_COLOR[u.role] ?? "bg-gray-100 text-gray-600"}`}
                   variant="secondary"
                 >
-                  {ROLE_LABEL[u.role] ?? u.role}
+                  {roleLabel(u.role)}
                 </Badge>
               </div>
             ))}
@@ -239,7 +232,7 @@ export function AdminOverview({ user, onNavigate }: Props) {
         <Card>
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-base text-[#1B2B4B]">Ангиуд</CardTitle>
+              <CardTitle className="text-base text-[#1B2B4B]">Бүлгүүд</CardTitle>
               <Button
                 variant="ghost"
                 size="sm"
@@ -252,7 +245,7 @@ export function AdminOverview({ user, onNavigate }: Props) {
           </CardHeader>
           <CardContent className="space-y-2">
             {classes.length === 0 ? (
-              <p className="text-sm text-gray-400 text-center py-6">Анги байхгүй</p>
+              <p className="text-sm text-gray-400 text-center py-6">Бүлэг байхгүй</p>
             ) : (
               classes.slice(0, 5).map((c) => (
                 <div
@@ -264,7 +257,7 @@ export function AdminOverview({ user, onNavigate }: Props) {
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-medium text-[#1B2B4B]">{c.name}</p>
-                    <p className="text-xs text-gray-400">{c.grade_level}-р анги · {c.academic_year}</p>
+                    <p className="text-xs text-gray-400">{groupSubtitle(c)}</p>
                   </div>
                   <Badge
                     className={`text-xs shrink-0 ${c.is_active ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}

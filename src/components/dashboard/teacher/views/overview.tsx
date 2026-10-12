@@ -10,6 +10,7 @@ import {
   type Assignment, type Conversation, type AttendanceSummary,
 } from "@/lib/api";
 import { StatCard, SectionCard, EmptyState, Pill } from "@/components/ui/dashboard-ui";
+import { groupSubtitle } from "@/lib/terms";
 
 interface Props {
   user: User;
@@ -101,7 +102,7 @@ export function TeacherOverview({ user }: Props) {
           </p>
           <div className="mt-3 flex flex-wrap gap-2 text-xs">
             <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 font-medium ring-1 ring-white/15">
-              {classes.length} анги
+              {classes.length} бүлэг
             </span>
             <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 font-medium ring-1 ring-white/15">
               {totalStudents} сурагч
@@ -117,7 +118,7 @@ export function TeacherOverview({ user }: Props) {
           tone="navy"
           label="Нийт сурагч"
           value={totalStudents}
-          hint={`${classes.length} ангид`}
+          hint={`${classes.length} бүлэгт`}
         />
         <StatCard
           icon={CheckCircle2}
@@ -151,7 +152,7 @@ export function TeacherOverview({ user }: Props) {
         {/* Classes */}
         <SectionCard
           icon={Users}
-          title="Миний ангиуд"
+          title="Миний бүлгүүд"
           action={
             <button className="inline-flex items-center gap-1 text-xs font-medium text-primary transition hover:underline">
               Бүгдийг харах <ArrowRight className="size-3" />
@@ -160,7 +161,7 @@ export function TeacherOverview({ user }: Props) {
           bodyClassName="space-y-2"
         >
           {classes.length === 0 ? (
-            <EmptyState icon={Users} title="Анги байхгүй" />
+            <EmptyState icon={Users} title="Бүлэг байхгүй" />
           ) : (
             classes.map((c) => (
               <div
@@ -173,7 +174,7 @@ export function TeacherOverview({ user }: Props) {
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-medium text-foreground">{c.name}</p>
                   <p className="text-xs text-muted-foreground">
-                    {c.grade_level}-р анги · {c.academic_year}
+                    {groupSubtitle(c)}
                   </p>
                 </div>
                 {c.teacher && (

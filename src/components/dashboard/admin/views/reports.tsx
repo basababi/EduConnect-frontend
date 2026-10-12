@@ -53,7 +53,7 @@ export function AdminReports() {
   return (
     <div className="animate-in-rise space-y-6 p-6">
       <div>
-        <h1 className="text-2xl font-bold text-primary">Сургуулийн тайлан</h1>
+        <h1 className="text-2xl font-bold text-primary">Төвийн тайлан</h1>
         <p className="mt-0.5 text-sm text-muted-foreground">
           Ерөнхий статистик ба эрсдэлтэй сурагчид
         </p>
@@ -75,7 +75,7 @@ export function AdminReports() {
         />
         <Stat
           icon={BookOpen}
-          label="Анги"
+          label="Бүлэг"
           value={dash?.classes ?? 0}
           tone="bg-amber-100 text-amber-600"
         />

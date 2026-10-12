@@ -2,13 +2,16 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { ArrowRight, Sparkles } from "lucide-react";
+import { ArrowRight, Check, Sparkles } from "lucide-react";
 
 interface HeroProps {
   onLogin: () => void;
+  onRegister: () => void;
 }
 
-export function Hero({ onLogin }: HeroProps) {
+const HIGHLIGHTS = ["Үнэгүй туршилтаар эхэлнэ", "Утсанд апп болгон суулгана", "Бүрэн монгол хэл дээр"];
+
+export function Hero({ onLogin, onRegister }: HeroProps) {
   return (
     <section className="relative overflow-hidden border-b border-border/50">
       <div className="container relative mx-auto px-4 py-20 md:py-32">
@@ -16,18 +19,18 @@ export function Hero({ onLogin }: HeroProps) {
           {/* Badge */}
           <div className="inline-flex items-center gap-2 rounded-full border border-border bg-muted/50 px-3 py-1 text-xs font-medium text-muted-foreground">
             <Sparkles className="h-3 w-3 text-amber" />
-            Монголын сургуулиудад зориулсан нэгдсэн платформ
+            Сургалтын төвүүдэд зориулсан удирдлагын платформ
           </div>
 
           {/* Headline */}
           <h1 className="mt-6 text-4xl font-semibold tracking-tight text-foreground md:text-6xl md:leading-[1.1]">
-            Сургуулийн удирдлага,<br className="hidden sm:block" /> нэг платформ.
+            Сургалтын төвөө<br className="hidden sm:block" /> нэг дороос удирд.
           </h1>
 
           {/* Subheadline */}
           <p className="mx-auto mt-6 max-w-xl text-lg text-muted-foreground md:text-xl">
-            Ирц бүртгэл, дүнгийн журнал, эцэг эх-багш чат, мэдэгдэл — бүгдийг
-            нэг системд. Цаасан хэрэггүй, хурдан, найдвартай.
+            Бүлэг, сурагч, ирц, даалгавар, эцэг эхтэй харилцах харилцаа — бүгд нэг
+            системд. Excel, дэвтэр, чатын бүлэг хооронд сэлгэх шаардлагагүй.
           </p>
 
           {/* CTAs */}
@@ -35,10 +38,10 @@ export function Hero({ onLogin }: HeroProps) {
             <Button
               size="lg"
               variant="amber"
-              onClick={onLogin}
+              onClick={onRegister}
               className="font-medium shadow-sm"
             >
-              Демо үзэх
+              Төвөө бүртгүүлэх
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
             <Button
@@ -51,29 +54,18 @@ export function Hero({ onLogin }: HeroProps) {
             </Button>
           </div>
 
-          {/* Social proof */}
-          <div className="mt-12 flex flex-wrap items-center justify-center gap-x-8 gap-y-3 text-sm text-muted-foreground">
-            <div className="flex items-center gap-2">
-              <div className="flex -space-x-2">
-                {["Б", "С", "О", "Д"].map((initial, i) => (
-                  <div
-                    key={i}
-                    className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-background bg-muted text-xs font-medium"
-                  >
-                    {initial}
-                  </div>
-                ))}
-              </div>
-              <span>50+ сургууль</span>
-            </div>
-            <div className="h-4 w-px bg-border" />
-            <span>15,000+ сурагч</span>
-            <div className="h-4 w-px bg-border" />
-            <span>99.9% uptime</span>
+          {/* Гол давуу тал — баталгаажаагүй тоо, сэтгэгдэл тавихгүй */}
+          <div className="mt-12 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-muted-foreground">
+            {HIGHLIGHTS.map((h) => (
+              <span key={h} className="inline-flex items-center gap-1.5">
+                <Check className="h-4 w-4 text-amber" />
+                {h}
+              </span>
+            ))}
           </div>
         </div>
 
-        {/* Product Preview */}
+        {/* Product Preview (жишээ дэлгэц) */}
         <div className="mx-auto mt-16 max-w-5xl">
           <Card className="overflow-hidden border-border/50 shadow-2xl shadow-primary/5">
             <CardContent className="p-0">
@@ -86,7 +78,7 @@ export function Hero({ onLogin }: HeroProps) {
                 </div>
                 <div className="mx-auto flex items-center gap-2 rounded-md bg-background px-3 py-1 text-xs text-muted-foreground">
                   <div className="h-2 w-2 rounded-full bg-amber" />
-                  educonnect.mn/dashboard
+                  Жишээ дэлгэц
                 </div>
               </div>
               {/* Dashboard preview */}
@@ -101,10 +93,10 @@ export function Hero({ onLogin }: HeroProps) {
                       </div>
                     </div>
                     <div className="rounded-lg border border-border/50 bg-card p-4">
-                      <p className="text-xs text-muted-foreground">Дүнгийн дундаж</p>
-                      <p className="mt-1 text-2xl font-semibold">85.4</p>
+                      <p className="text-xs text-muted-foreground">Идэвхтэй бүлэг</p>
+                      <p className="mt-1 text-2xl font-semibold">12</p>
                       <div className="mt-2 h-1.5 w-full rounded-full bg-muted">
-                        <div className="h-full w-[85%] rounded-full bg-primary" />
+                        <div className="h-full w-[75%] rounded-full bg-primary" />
                       </div>
                     </div>
                   </div>
@@ -118,7 +110,7 @@ export function Hero({ onLogin }: HeroProps) {
                             style={{ height: `${v}%` }}
                           />
                           <span className="text-[10px] text-muted-foreground">
-                            {["Д", "М", "Л", "П", "Б", "Б", "Н"][i]}
+                            {["Да", "Мя", "Лх", "Пү", "Ба", "Бя", "Ня"][i]}
                           </span>
                         </div>
                       ))}
@@ -129,7 +121,7 @@ export function Hero({ onLogin }: HeroProps) {
                   <div className="rounded-lg border border-border/50 bg-card p-4">
                     <p className="mb-2 text-xs text-muted-foreground">Шинэ мэдэгдэл</p>
                     <div className="space-y-2">
-                      {["Ирц бүртгэгдлээ", "Шинэ дүн орлоо", "Даалгавар нэмэгдлээ"].map((t) => (
+                      {["Ирц бүртгэгдлээ", "Шинэ сурагч элслээ", "Даалгавар нэмэгдлээ"].map((t) => (
                         <div key={t} className="flex items-center gap-2 text-xs">
                           <div className="h-1.5 w-1.5 rounded-full bg-amber" />
                           {t}
@@ -138,7 +130,7 @@ export function Hero({ onLogin }: HeroProps) {
                     </div>
                   </div>
                   <div className="rounded-lg border border-border/50 bg-card p-4">
-                    <p className="mb-2 text-xs text-muted-foreground">Чат</p>
+                    <p className="mb-2 text-xs text-muted-foreground">Мессеж</p>
                     <div className="space-y-2">
                       <div className="ml-auto w-fit rounded-lg bg-primary px-2.5 py-1 text-xs text-primary-foreground">
                         Сайн байна уу?

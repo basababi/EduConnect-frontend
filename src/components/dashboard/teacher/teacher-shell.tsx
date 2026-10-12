@@ -36,7 +36,7 @@ const SECTIONS: ShellNavSection[] = [
       { id: "grades", label: "Дүн шинжилгээ", icon: BarChart3, primary: true, shortLabel: "Дүн" },
       { id: "assignments", label: "Даалгавар", icon: FileText, primary: true, shortLabel: "Даалгавар" },
       { id: "materials", label: "Хичээлийн материал", icon: FolderOpen },
-      { id: "ai-reviews", label: "AI шалгалт", icon: ClipboardCheck },
+      { id: "ai-reviews", label: "AI шалгалт", icon: ClipboardCheck, feature: "ai_tutor" },
       { id: "messages", label: "Мессеж", icon: MessageSquare },
     ],
   },
@@ -58,7 +58,6 @@ interface TeacherShellProps {
   onLogout: () => void;
   children: React.ReactNode;
   unreadMessages?: number;
-  unreadNotifications?: number;
 }
 
 export function TeacherShell({
@@ -68,7 +67,6 @@ export function TeacherShell({
   onLogout,
   children,
   unreadMessages = 0,
-  unreadNotifications = 0,
 }: TeacherShellProps) {
   return (
     <DashboardShell
@@ -80,7 +78,6 @@ export function TeacherShell({
       onViewChange={(id) => onViewChange(id as TeacherView)}
       onLogout={onLogout}
       unreadMessages={unreadMessages}
-      unreadNotifications={unreadNotifications}
       mainClassName="p-4 md:p-6"
     >
       {children}

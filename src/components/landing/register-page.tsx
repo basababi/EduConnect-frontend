@@ -24,9 +24,9 @@ interface RegisterPageProps {
 }
 
 const BENEFITS = [
-  "Сургуулиа 5 минутад бүртгэнэ",
-  "Ирц, дүн, даалгавар — бүгд нэг дор",
-  "Эцэг эх-багшийн real-time харилцаа",
+  "Төвөө хэдхэн минутад бүртгэнэ",
+  "Бүлэг, ирц, даалгавар — бүгд нэг дор",
+  "Эцэг эх-багшийн шууд харилцаа",
   "Үнэгүй туршилтаар эхэлнэ",
 ];
 
@@ -58,7 +58,7 @@ export function RegisterPage({ onBack, onSuccess, onLogin }: RegisterPageProps) 
       // Шинэ үүсгэсэн админаар автоматаар нэвтэрнэ
       const res = await authApi.login(email.trim(), password);
       setAuth(res.accessToken, res.refreshToken, res.user);
-      toast.success(`Тавтай морил, ${res.user.first_name}! Сургууль бүртгэгдлээ.`);
+      toast.success(`Тавтай морил, ${res.user.first_name}! Төв бүртгэгдлээ.`);
       onSuccess(res.user);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Бүртгэж чадсангүй");
@@ -93,10 +93,10 @@ export function RegisterPage({ onBack, onSuccess, onLogin }: RegisterPageProps) 
 
         <div className="relative space-y-6">
           <h2 className="text-3xl font-bold leading-tight md:text-4xl">
-            Сургуулиа дижитал болгох эхний алхам
+            Сургалтын төвөө дижитал болгох эхний алхам
           </h2>
           <p className="text-primary-foreground/70">
-            Ахлах ангийн сурагч, багш, эцэг эхийг нэг платформд нэгтгэ.
+            Багш, сурагч, эцэг эхээ нэг платформд нэгтгэ.
           </p>
           <div className="space-y-3 pt-2">
             {BENEFITS.map((f) => (
@@ -123,22 +123,22 @@ export function RegisterPage({ onBack, onSuccess, onLogin }: RegisterPageProps) 
           </button>
 
           <div>
-            <h2 className="text-3xl font-bold text-primary">Сургуулиа бүртгүүлэх</h2>
+            <h2 className="text-3xl font-bold text-primary">Төвөө бүртгүүлэх</h2>
             <p className="mt-2 text-muted-foreground">
-              Та сургуулийн админ дансаа үүсгэнэ. Дараа нь багш, сурагчаа урина.
+              Та төвийн админ дансаа үүсгэнэ. Дараа нь багш, сурагчаа нэмнэ.
             </p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="r-school">Сургуулийн нэр</Label>
+              <Label htmlFor="r-school">Төвийн нэр</Label>
               <div className="relative">
                 <Building2 className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   id="r-school"
                   value={schoolName}
                   onChange={(e) => setSchoolName(e.target.value)}
-                  placeholder="Шинэ Эра сургууль"
+                  placeholder="Ирээдүй сургалтын төв"
                   required
                   disabled={loading}
                   className="pl-10"
@@ -180,7 +180,7 @@ export function RegisterPage({ onBack, onSuccess, onLogin }: RegisterPageProps) 
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="admin@school.mn"
+                  placeholder="admin@example.mn"
                   required
                   disabled={loading}
                   className="pl-10"
@@ -222,7 +222,7 @@ export function RegisterPage({ onBack, onSuccess, onLogin }: RegisterPageProps) 
             </div>
 
             <Button type="submit" variant="amber" className="w-full" disabled={loading}>
-              {loading ? "Бүртгэж байна..." : "Сургууль бүртгүүлэх"}
+              {loading ? "Бүртгэж байна..." : "Төв бүртгүүлэх"}
               {!loading && <ArrowRight className="ml-2 h-4 w-4" />}
             </Button>
           </form>

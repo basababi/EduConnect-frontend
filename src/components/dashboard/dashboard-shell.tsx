@@ -6,6 +6,7 @@ import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { GraduationCap, LogOut, Sparkles, MoreHorizontal } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { authApi, type User } from "@/lib/api";
+import { hasFeature, type FeatureKey } from "@/lib/features";
 import { cn } from "@/lib/utils";
 import { NotificationBell } from "@/components/dashboard/notification-bell";
 
@@ -19,6 +20,8 @@ export interface ShellNavItem {
   primary?: boolean;
   /** Доод tab bar дахь богино нэр (сонголт) */
   shortLabel?: string;
+  /** Төвд энэ боломж асаалттай үед л харагдана (lib/features.ts) */
+  feature?: FeatureKey;
 }
 
 export interface ShellNavSection {
@@ -36,7 +39,6 @@ interface DashboardShellProps {
   onLogout: () => void;
   children: React.ReactNode;
   unreadMessages?: number;
-  unreadNotifications?: number;
   mainClassName?: string;
 }
 
@@ -44,16 +46,23 @@ export function DashboardShell({
   user,
   portalLabel,
   roleLabel,
-  sections,
+  sections: allSections,
   activeView,
   onViewChange,
   onLogout,
   children,
   unreadMessages = 0,
-  unreadNotifications = 0,
   mainClassName,
 }: DashboardShellProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  // Төвд асаагаагүй боломжийн цэсийг харуулахгүй; хоосорсон хэсгийг бүхэлд нь хасна
+  const sections = allSections
+    .map((s) => ({
+      ...s,
+      items: s.items.filter((i) => !i.feature || hasFeature(user, i.feature)),
+    }))
+    .filter((s) => s.items.length > 0);
 
   async function handleLogout() {
     await authApi.logout();

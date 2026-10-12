@@ -22,7 +22,7 @@ import { toast } from "sonner";
 import { invitationsApi, setAuth, type InvitationPreview } from "@/lib/api";
 
 const ROLE_META: Record<string, { label: string; icon: typeof BookOpen; desc: string }> = {
-  admin: { label: "Сургуулийн Админ", icon: ShieldCheck, desc: "Сургуулийн удирдлага" },
+  admin: { label: "Төвийн админ", icon: ShieldCheck, desc: "Төвийн удирдлага" },
   teacher: { label: "Багш", icon: BookOpen, desc: "Ирц, дүн бүртгэх" },
   parent: { label: "Эцэг эх", icon: Users, desc: "Хүүхдээ хянах" },
 };
@@ -160,7 +160,7 @@ export default function InviteAcceptPage() {
                   Урилгын хугацаа дууссан
                 </h2>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Сургуулийн админаас шинэ урилга авна уу.
+                  Төвийн админаас шинэ урилга авна уу.
                 </p>
               </div>
               <Button variant="outline" onClick={() => router.push("/")}>

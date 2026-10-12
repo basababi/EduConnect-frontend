@@ -113,7 +113,7 @@ export function TeacherSubjects() {
           ))}
         </div>
       ) : classes.length === 0 ? (
-        <EmptyCard text="Танд хариуцсан анги алга — админ анги хуваарилна" />
+        <EmptyCard text="Танд хариуцсан бүлэг алга — админ бүлэг хуваарилна" />
       ) : subjects.length === 0 ? (
         <EmptyCard text="Эхний хичээлээ үүсгээрэй" />
       ) : (
@@ -223,7 +223,7 @@ function CreateDialog({
       });
       toast.success(
         kind === "required"
-          ? "Хичээл үүсч, ангийн сурагчид автоматаар элслээ"
+          ? "Хичээл үүсч, бүлгийн сурагчид автоматаар элслээ"
           : "Сонгон хичээл үүслээ — сурагчдыг гараар элсүүлнэ",
       );
       onSaved();
@@ -257,10 +257,10 @@ function CreateDialog({
             />
           </div>
           <div className="space-y-2">
-            <Label>Анги</Label>
+            <Label>Бүлэг</Label>
             <Select value={classId} onValueChange={setClassId} disabled={submitting}>
               <SelectTrigger>
-                <SelectValue placeholder="Анги сонгох" />
+                <SelectValue placeholder="Бүлэг сонгох" />
               </SelectTrigger>
               <SelectContent>
                 {classes.map((c) => (
@@ -485,7 +485,7 @@ function ManageContent({
             {enrolled.length === 0 && notEnrolled.length === 0 && (
               <div className="flex flex-col items-center gap-2 py-10">
                 <GraduationCap className="h-9 w-9 text-muted-foreground/40" />
-                <p className="text-sm text-muted-foreground">Ангид сурагч алга</p>
+                <p className="text-sm text-muted-foreground">Бүлэгт сурагч алга</p>
               </div>
             )}
           </>

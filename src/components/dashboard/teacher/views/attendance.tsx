@@ -118,7 +118,7 @@ export function TeacherAttendance() {
             />
           </div>
           <div>
-            <Label className="text-xs">Анги</Label>
+            <Label className="text-xs">Бүлэг</Label>
             <Select
               value={selectedClass?.toString()}
               onValueChange={(v) => setSelectedClass(parseInt(v))}
@@ -236,7 +236,7 @@ export function TeacherAttendance() {
             ))}
             {filtered.length === 0 && (
               <div className="py-12 text-center text-sm text-muted-foreground">
-                Энэ ангид сурагч алга
+                Энэ бүлэгт сурагч алга
               </div>
             )}
           </div>

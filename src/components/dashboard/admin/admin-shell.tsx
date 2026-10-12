@@ -20,6 +20,8 @@ import {
   Trophy,
 } from "lucide-react";
 import { authApi, type User } from "@/lib/api";
+import { hasFeature, type FeatureKey } from "@/lib/features";
+import { ROLE_LABELS, TERMS } from "@/lib/terms";
 import { NotificationBell } from "@/components/dashboard/notification-bell";
 
 export type AdminView =
@@ -37,14 +39,16 @@ interface NavItem {
   id: AdminView;
   label: string;
   icon: typeof Home;
+  /** Төвд энэ боломж асаалттай үед л харагдана */
+  feature?: FeatureKey;
 }
 
 const ADMIN_NAV: NavItem[] = [
   { id: "overview", label: "Нүүр", icon: Home },
   { id: "users", label: "Хэрэглэгчид", icon: Users },
-  { id: "classes", label: "Ангиуд", icon: BookOpen },
-  { id: "universities", label: "Их сургууль (карьер)", icon: GraduationCap },
-  { id: "exams", label: "Нийтийн шалгалт", icon: Trophy },
+  { id: "classes", label: TERMS.group.many, icon: BookOpen },
+  { id: "universities", label: "Их сургууль (карьер)", icon: GraduationCap, feature: "career" },
+  { id: "exams", label: "Нийтийн шалгалт", icon: Trophy, feature: "public_exams" },
   { id: "announcements", label: "Зарлал", icon: Megaphone },
   { id: "reports", label: "Тайлан", icon: BarChart3 },
   { id: "settings", label: "Тохиргоо", icon: Settings },
@@ -52,10 +56,10 @@ const ADMIN_NAV: NavItem[] = [
 
 const SUPER_ADMIN_NAV: NavItem[] = [
   { id: "overview", label: "Нүүр", icon: Home },
-  { id: "schools", label: "Сургуулиуд", icon: Building2 },
+  { id: "schools", label: TERMS.org.many, icon: Building2 },
   { id: "users", label: "Хэрэглэгчид", icon: Users },
-  { id: "universities", label: "Их сургууль (карьер)", icon: GraduationCap },
-  { id: "exams", label: "Нийтийн шалгалт", icon: Trophy },
+  { id: "universities", label: "Их сургууль (карьер)", icon: GraduationCap, feature: "career" },
+  { id: "exams", label: "Нийтийн шалгалт", icon: Trophy, feature: "public_exams" },
   { id: "announcements", label: "Зарлал", icon: Megaphone },
   { id: "reports", label: "Тайлан", icon: BarChart3 },
   { id: "settings", label: "Тохиргоо", icon: Settings },
@@ -67,7 +71,6 @@ interface AdminShellProps {
   onViewChange: (view: AdminView) => void;
   onLogout: () => void;
   children: React.ReactNode;
-  unreadNotifications?: number;
 }
 
 export function AdminShell({
@@ -76,10 +79,11 @@ export function AdminShell({
   onViewChange,
   onLogout,
   children,
-  unreadNotifications = 0,
 }: AdminShellProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const navItems = user.role === "super_admin" ? SUPER_ADMIN_NAV : ADMIN_NAV;
+  const navItems = (user.role === "super_admin" ? SUPER_ADMIN_NAV : ADMIN_NAV).filter(
+    (item) => !item.feature || hasFeature(user, item.feature),
+  );
 
   async function handleLogout() {
     await authApi.logout();
@@ -112,7 +116,7 @@ export function AdminShell({
             <div className="flex items-center gap-1 mt-0.5">
               <Shield className="h-3 w-3 text-[#F5A623]" />
               <p className="text-xs text-white/60">
-                {user.role === "super_admin" ? "Супер Админ" : "Сургуулийн Админ"}
+                {ROLE_LABELS[user.role]}
               </p>
             </div>
           </div>

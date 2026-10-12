@@ -99,7 +99,7 @@ function ReportCardInner() {
             <p className="font-semibold text-gray-900">{data.student.name}</p>
           </div>
           <div>
-            <p className="text-xs text-gray-400">Анги</p>
+            <p className="text-xs text-gray-400">Бүлэг</p>
             <p className="font-semibold text-gray-900">
               {data.student.class_name ?? "—"}
             </p>
@@ -128,7 +128,7 @@ function ReportCardInner() {
             {data.subjects.length === 0 ? (
               <tr>
                 <td colSpan={6} className="py-8 text-center text-gray-400">
-                  Энэ улиралд дүн бүртгэгдээгүй байна
+                  Дүн бүртгэгдээгүй байна
                 </td>
               </tr>
             ) : (
@@ -178,7 +178,7 @@ function ReportCardInner() {
         <div className="mt-12 grid grid-cols-2 gap-8 text-sm">
           <div>
             <div className="border-t border-gray-300 pt-1 text-center text-xs text-gray-500">
-              Анги даасан багш
+              Багш
             </div>
           </div>
           <div>

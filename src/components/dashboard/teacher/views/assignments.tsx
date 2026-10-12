@@ -84,7 +84,7 @@ export function TeacherAssignments() {
     });
   }, []);
 
-  // Диалогт сонгосон ангийн хичээлүүд
+  // Диалогт сонгосон бүлгийн хичээлүүд
   const formSubjects = allSubjects.filter(
     (s) => String(s.class_id) === form.class_id,
   );
@@ -104,7 +104,7 @@ export function TeacherAssignments() {
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
     if (!form.class_id || !form.subject) {
-      toast.error("Анги болон хичээлээ сонгоно уу");
+      toast.error("Бүлэг болон хичээлээ сонгоно уу");
       return;
     }
     try {
@@ -145,13 +145,13 @@ export function TeacherAssignments() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div className="flex flex-wrap gap-3">
           <div>
-            <Label className="text-xs">Анги</Label>
+            <Label className="text-xs">Бүлэг</Label>
             <Select value={selectedClass} onValueChange={setSelectedClass}>
               <SelectTrigger className="mt-1 w-32">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Бүх анги</SelectItem>
+                <SelectItem value="all">Бүх бүлэг</SelectItem>
                 {classes.map((c) => (
                   <SelectItem key={c.id} value={c.id.toString()}>
                     {c.name}
@@ -185,7 +185,7 @@ export function TeacherAssignments() {
             </DialogHeader>
             <form onSubmit={handleCreate} className="space-y-3">
               <div>
-                <Label>Анги</Label>
+                <Label>Бүлэг</Label>
                 <Select
                   value={form.class_id}
                   onValueChange={(v) => setForm({ ...form, class_id: v, subject: "" })}
@@ -232,7 +232,7 @@ export function TeacherAssignments() {
                       <SelectValue
                         placeholder={
                           !form.class_id
-                            ? "Эхлээд анги"
+                            ? "Эхлээд бүлэг"
                             : formSubjects.length === 0
                               ? "Хичээл алга"
                               : "Сонгох"

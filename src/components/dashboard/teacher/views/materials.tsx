@@ -110,7 +110,7 @@ export function TeacherMaterials() {
           {!loadingClasses && classes.length > 0 && (
             <Select value={classId} onValueChange={setClassId}>
               <SelectTrigger className="w-36">
-                <SelectValue placeholder="Анги" />
+                <SelectValue placeholder="Бүлэг" />
               </SelectTrigger>
               <SelectContent>
                 {classes.map((c) => (
@@ -133,7 +133,7 @@ export function TeacherMaterials() {
       {loadingClasses ? (
         <Skeleton className="h-64 w-full rounded-xl" />
       ) : classes.length === 0 ? (
-        <EmptyCard text="Танд хариуцсан анги алга" />
+        <EmptyCard text="Танд хариуцсан бүлэг алга" />
       ) : loadingMats ? (
         <div className="space-y-3">
           {[...Array(3)].map((_, i) => (
@@ -276,7 +276,7 @@ function UploadDialog({
         <DialogHeader>
           <DialogTitle>Хичээлийн материал нэмэх</DialogTitle>
           <DialogDescription>
-            Сонгосон ангийн сурагчид энэ файлыг харах боломжтой болно.
+            Сонгосон бүлгийн сурагчид энэ файлыг харах боломжтой болно.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -300,7 +300,7 @@ function UploadDialog({
             </Select>
             {subjects.length === 0 && (
               <p className="text-xs text-amber-600">
-                Энэ ангид хичээл үүсгээгүй байна. &quot;Миний хичээлүүд&quot;-ээс үүсгэнэ үү.
+                Энэ бүлэгт хичээл үүсгээгүй байна. &quot;Миний хичээлүүд&quot;-ээс үүсгэнэ үү.
               </p>
             )}
           </div>

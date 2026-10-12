@@ -92,13 +92,13 @@ export function TeacherSchedule() {
         <div>
           <h1 className="text-2xl font-bold text-primary">Хичээлийн хуваарь</h1>
           <p className="mt-0.5 text-sm text-muted-foreground">
-            Ангиа сонгож хуваарийг засна уу
+            Бүлгээ сонгож хуваарийг засна уу
           </p>
         </div>
         {!loadingClasses && classes.length > 0 && (
           <Select value={classId} onValueChange={setClassId}>
             <SelectTrigger className="w-44">
-              <SelectValue placeholder="Анги сонгох" />
+              <SelectValue placeholder="Бүлэг сонгох" />
             </SelectTrigger>
             <SelectContent>
               {classes.map((c) => (
@@ -114,7 +114,7 @@ export function TeacherSchedule() {
       {loadingClasses ? (
         <Skeleton className="h-96 w-full rounded-xl" />
       ) : classes.length === 0 ? (
-        <EmptyCard text="Танд хуваарь засах анги алга" />
+        <EmptyCard text="Танд хуваарь засах бүлэг алга" />
       ) : (
         <Card>
           <CardContent className="overflow-x-auto p-3">
@@ -286,7 +286,7 @@ function SlotDialog({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="sl-room">Анги/Өрөө (заавал биш)</Label>
+            <Label htmlFor="sl-room">Өрөө (заавал биш)</Label>
             <Input
               id="sl-room"
               value={room}
