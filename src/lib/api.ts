@@ -82,7 +82,22 @@ async function request<T>(
   return res.json() as Promise<T>;
 }
 
-async function tryRefresh(): Promise<boolean> {
+// Backend refresh token-ийг эргүүлдэг (rotation): нэг токен НЭГ л удаа хүчинтэй.
+// Тиймээс (1) зэрэг 401 авсан хүсэлтүүд refresh-ийг нэг л удаа явуулна (single-flight),
+// (2) хариунд ирсэн шинэ refresh token-ийг заавал хадгална — эс бөгөөс дараагийн
+// refresh унаж, хэрэглэгч ~1 цаг тутам системээс гарна.
+let refreshInFlight: Promise<boolean> | null = null;
+
+function tryRefresh(): Promise<boolean> {
+  if (!refreshInFlight) {
+    refreshInFlight = doRefresh().finally(() => {
+      refreshInFlight = null;
+    });
+  }
+  return refreshInFlight;
+}
+
+async function doRefresh(): Promise<boolean> {
   const refresh = getRefreshToken();
   if (!refresh) return false;
   try {
@@ -94,6 +109,7 @@ async function tryRefresh(): Promise<boolean> {
     if (!res.ok) return false;
     const data = await res.json();
     localStorage.setItem(TOKEN_KEY, data.accessToken);
+    if (data.refreshToken) localStorage.setItem(REFRESH_KEY, data.refreshToken);
     return true;
   } catch {
     return false;
