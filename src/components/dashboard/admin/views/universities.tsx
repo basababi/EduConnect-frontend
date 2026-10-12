@@ -307,7 +307,7 @@ export function AdminUniversities() {
                         colSpan={5}
                         className="p-6 text-center text-sm text-muted-foreground"
                       >
-                        Хөтөлбөр алга. "Хөтөлбөр нэмэх" дарж эхлүүлнэ үү.
+                        Хөтөлбөр алга. «Хөтөлбөр нэмэх» дарж эхлүүлнэ үү.
                       </td>
                     </tr>
                   )}

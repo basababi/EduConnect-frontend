@@ -20,7 +20,6 @@ import {
   Shield,
   BookOpen,
   Users,
-  TrendingUp,
   CheckCircle2,
 } from "lucide-react";
 import { toast } from "sonner";

@@ -72,12 +72,13 @@ export function DashboardShell({
   const moreHasBadge = !bottomIds.has("messages") && unreadMessages > 0;
   const activeInMore = !bottomIds.has(activeView);
 
-  const NavButton = ({ item }: { item: ShellNavItem }) => {
+  const renderNavButton = (item: ShellNavItem) => {
     const Icon = item.icon;
     const isActive = activeView === item.id;
     const badge = item.id === "messages" ? unreadMessages : item.badge ?? 0;
     return (
       <button
+        key={item.id}
         onClick={() => {
           onViewChange(item.id);
           setMobileOpen(false);
@@ -116,7 +117,7 @@ export function DashboardShell({
     );
   };
 
-  const SidebarContent = () => (
+  const sidebarContent = (
     <div className="flex h-full flex-col bg-sidebar text-sidebar-foreground">
       {/* Logo + user */}
       <div className="border-b border-sidebar-border p-4">
@@ -154,9 +155,7 @@ export function DashboardShell({
                 {section.label}
               </p>
             )}
-            {section.items.map((item) => (
-              <NavButton key={item.id} item={item} />
-            ))}
+            {section.items.map((item) => renderNavButton(item))}
           </div>
         ))}
       </nav>
@@ -177,14 +176,12 @@ export function DashboardShell({
   return (
     <div className="flex h-screen overflow-hidden bg-background">
       {/* Desktop sidebar */}
-      <aside className="hidden w-64 shrink-0 md:block">
-        <SidebarContent />
-      </aside>
+      <aside className="hidden w-64 shrink-0 md:block">{sidebarContent}</aside>
 
       {/* Mobile sidebar */}
       <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
         <SheetContent side="left" className="w-64 border-0 p-0">
-          <SidebarContent />
+          {sidebarContent}
         </SheetContent>
       </Sheet>
 

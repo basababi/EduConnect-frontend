@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -80,7 +79,7 @@ export function TeacherAttendance() {
     setSaving(true);
     try {
       const markArray = Object.entries(marks)
-        .filter(([_, status]) => status !== "present")
+        .filter(([, status]) => status !== "present")
         .map(([studentId, status]) => ({
           student_id: parseInt(studentId),
           status,
