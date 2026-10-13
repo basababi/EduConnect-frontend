@@ -6,7 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { FolderOpen, FileText, Download } from "lucide-react";
 import { toast } from "sonner";
 import {
-  studentsApi,
+  enrollmentsApi,
   materialsApi,
   downloadFile,
   type Material,
@@ -25,19 +25,21 @@ export function StudentMaterials() {
 
   useEffect(() => {
     async function load() {
-      const me = await studentsApi.me().catch(() => null);
-      if (me?.class_id) {
-        const mats = await materialsApi
-          .listForClass(me.class_id)
-          .catch(() => [] as Material[]);
-        setMaterials(mats);
-      }
+      // Суралцаж буй бүх бүлгийн материалыг нэгтгэнэ
+      const mine = await enrollmentsApi.mine().catch(() => []);
+      const classIds = mine
+        .filter((e) => e.status === "active" || e.status === "paused")
+        .map((e) => e.class_id);
+      const lists = await Promise.all(
+        classIds.map((id) => materialsApi.listForClass(id).catch(() => [] as Material[])),
+      );
+      setMaterials(lists.flat());
       setLoading(false);
     }
     load();
   }, []);
 
-  // Хичээлээр бүлэглэх
+  // Курсээр бүлэглэх
   const bySubject = materials.reduce<Record<string, Material[]>>((acc, m) => {
     (acc[m.subject] ??= []).push(m);
     return acc;

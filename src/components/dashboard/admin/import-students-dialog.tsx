@@ -35,6 +35,9 @@ interface ParsedRow {
   student_code?: string;
   date_of_birth?: string;
   class_name?: string;
+  phone?: string;
+  guardian_name?: string;
+  guardian_phone?: string;
   email?: string;
   password?: string;
 }
@@ -59,6 +62,15 @@ const COLUMN_MAP: Record<string, keyof ParsedRow> = {
   "төрсөн өдөр": "date_of_birth",
   dob: "date_of_birth",
   "date of birth": "date_of_birth",
+  утас: "phone",
+  "сурагчийн утас": "phone",
+  phone: "phone",
+  "асран хамгаалагч": "guardian_name",
+  "эцэг эхийн нэр": "guardian_name",
+  guardian: "guardian_name",
+  "асран хамгаалагчийн утас": "guardian_phone",
+  "эцэг эхийн утас": "guardian_phone",
+  "guardian phone": "guardian_phone",
   имэйл: "email",
   "и-мэйл": "email",
   email: "email",
@@ -98,6 +110,7 @@ export function ImportStudentsDialog({
   const [result, setResult] = useState<{
     created: number;
     withLogin?: number;
+    enrolled?: number;
     failed: number;
     errors: Array<{ row: number; reason: string }>;
   } | null>(null);
@@ -173,6 +186,9 @@ export function ImportStudentsDialog({
         student_code: r.student_code,
         date_of_birth: r.date_of_birth,
         class_id: resolveClassId(r.class_name),
+        phone: r.phone,
+        guardian_name: r.guardian_name,
+        guardian_phone: r.guardian_phone,
         email: r.email,
         password: r.password,
       }));
@@ -189,15 +205,13 @@ export function ImportStudentsDialog({
 
   function downloadTemplate() {
     const ws = XLSX.utils.aoa_to_sheet([
-      ["Овог", "Нэр", "Сурагчийн код", "Бүлэг", "Төрсөн огноо", "Имэйл", "Нууц үг"],
       [
-        "Бат",
-        "Болд",
-        "ST-0001",
-        classes[0]?.name ?? "Бүлэг 1",
-        "2009-05-15",
-        "bat.bold@example.mn",
-        "nuuts123",
+        "Овог", "Нэр", "Сурагчийн код", "Бүлэг", "Утас",
+        "Асран хамгаалагч", "Асран хамгаалагчийн утас", "Төрсөн огноо", "Имэйл", "Нууц үг",
+      ],
+      [
+        "Бат", "Болд", "ST-0001", classes[0]?.name ?? "Бүлэг 1", "99112233",
+        "Бат Дорж", "88112233", "2009-05-15", "", "",
       ],
     ]);
     const wb = XLSX.utils.book_new();
@@ -217,8 +231,9 @@ export function ImportStudentsDialog({
         <DialogHeader>
           <DialogTitle>Сурагч Excel-ээс импортлох</DialogTitle>
           <DialogDescription>
-            Багана: Овог, Нэр, Сурагчийн код, Бүлэг, Төрсөн огноо. Нэмж{" "}
-            <b>Имэйл + Нууц үг</b> өгвөл сурагчид нэвтрэх данс үүснэ.
+            Багана: Овог, Нэр, Сурагчийн код, Бүлэг, Утас, Асран хамгаалагч, Асран
+            хамгаалагчийн утас, Төрсөн огноо. Нэмж <b>Имэйл + Нууц үг</b> өгвөл сурагчид
+            нэвтрэх данс үүснэ.
           </DialogDescription>
         </DialogHeader>
 
@@ -230,6 +245,11 @@ export function ImportStudentsDialog({
                 <p className="font-semibold text-green-800">
                   {result.created} сурагч амжилттай импортлогдлоо
                 </p>
+                {result.enrolled ? (
+                  <p className="text-sm text-green-700">
+                    {result.enrolled} сурагч бүлэгт элслээ
+                  </p>
+                ) : null}
                 {result.withLogin ? (
                   <p className="text-sm text-green-700">
                     {result.withLogin} сурагчид нэвтрэх данс үүслээ
@@ -322,7 +342,7 @@ export function ImportStudentsDialog({
                       <th className="p-2">Нэр</th>
                       <th className="p-2">Код</th>
                       <th className="p-2">Бүлэг</th>
-                      <th className="p-2">Төрсөн</th>
+                      <th className="p-2">Холбоо барих</th>
                       <th className="p-2">Нэвтрэх</th>
                     </tr>
                   </thead>
@@ -337,7 +357,7 @@ export function ImportStudentsDialog({
                             classes.find((c) => String(c.id) === defaultClassId)?.name ??
                             "—"}
                         </td>
-                        <td className="p-2">{r.date_of_birth ?? "—"}</td>
+                        <td className="p-2">{r.guardian_phone ?? r.phone ?? "—"}</td>
                         <td className="p-2">
                           {r.email ? (
                             <span className="text-emerald-600">{r.email}</span>

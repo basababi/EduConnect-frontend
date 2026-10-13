@@ -31,25 +31,26 @@ interface LoginPageProps {
   onRegister?: () => void;
 }
 
+// `npm run seed:center` (backend) үүсгэдэг демо төвийн данснууд
 const DEMO_ACCOUNTS = [
   {
-    email: "admin@school.mn",
-    password: "",
+    email: "admin@demo.test",
+    password: "password",
     label: "Админ",
     desc: "Төвийн удирдлага",
     icon: Shield,
     color: "bg-primary",
   },
   {
-    email: "teacher@school.mn",
+    email: "teacher@demo.test",
     password: "password",
     label: "Багш",
-    desc: "Ирц, дүн бүртгэх",
+    desc: "Ирц, үнэлгээ, даалгавар",
     icon: BookOpen,
     color: "bg-amber",
   },
   {
-    email: "parent@school.mn",
+    email: "parent@demo.test",
     password: "password",
     label: "Эцэг эх",
     desc: "Хүүхдээ хянах",
@@ -57,10 +58,10 @@ const DEMO_ACCOUNTS = [
     color: "bg-primary",
   },
   {
-    email: "student@school.mn",
+    email: "student@demo.test",
     password: "password",
     label: "Сурагч",
-    desc: "Хуваарь, дүн харах",
+    desc: "Хуваарь, даалгавар",
     icon: GraduationCap,
     color: "bg-amber",
   },
@@ -68,7 +69,7 @@ const DEMO_ACCOUNTS = [
 
 const LEFT_PANEL_FEATURES = [
   "Гар утсаар ирц бүртгэх",
-  "Бүлэг, сурагчийн бүртгэл",
+  "Курс, бүлэг, элсэлтийн бүртгэл",
   "Даалгавар, хичээлийн материал",
   "Эцэг эх-багшийн шууд харилцаа",
 ];

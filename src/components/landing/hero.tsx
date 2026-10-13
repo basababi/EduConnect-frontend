@@ -29,8 +29,8 @@ export function Hero({ onLogin, onRegister }: HeroProps) {
 
           {/* Subheadline */}
           <p className="mx-auto mt-6 max-w-xl text-lg text-muted-foreground md:text-xl">
-            Бүлэг, сурагч, ирц, даалгавар, эцэг эхтэй харилцах харилцаа — бүгд нэг
-            системд. Excel, дэвтэр, чатын бүлэг хооронд сэлгэх шаардлагагүй.
+            Курс, бүлэг, элсэлт, ирц, даалгавар, эцэг эхтэй харилцах харилцаа — бүгд
+            нэг системд. Excel, дэвтэр, чатын бүлэг хооронд сэлгэх шаардлагагүй.
           </p>
 
           {/* CTAs */}

@@ -26,9 +26,8 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import {
-  api,
+  assignmentsApi,
   submissionsApi,
-  studentsApi,
   uploadFile,
   type Assignment,
   type Submission,
@@ -41,19 +40,13 @@ export function StudentSubmissions() {
   const [target, setTarget] = useState<Assignment | null>(null);
 
   const load = useCallback(async () => {
-    const [mineRes, meRes] = await Promise.allSettled([
+    // Сурагчийн элссэн БҮХ бүлгийн даалгавар (нэг сурагч олон бүлэгт байж болно)
+    const [mineRes, asgnRes] = await Promise.allSettled([
       submissionsApi.mine(),
-      studentsApi.me(),
+      assignmentsApi.forStudent(),
     ]);
     if (mineRes.status === "fulfilled") setSubs(mineRes.value);
-
-    // Сурагчийн ангийг олж даалгаврыг татах
-    if (meRes.status === "fulfilled" && meRes.value.class_id) {
-      const asgn = await api
-        .get<Assignment[]>(`/assignments/class/${meRes.value.class_id}`)
-        .catch(() => [] as Assignment[]);
-      setAssignments(asgn);
-    }
+    if (asgnRes.status === "fulfilled") setAssignments(asgnRes.value);
     setLoading(false);
   }, []);
 

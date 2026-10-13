@@ -49,6 +49,8 @@ import { AdminShell, type AdminView } from "@/components/dashboard/admin/admin-s
 import { AdminOverview } from "@/components/dashboard/admin/views/overview";
 import { AdminUsers } from "@/components/dashboard/admin/views/users";
 import { AdminClasses } from "@/components/dashboard/admin/views/classes";
+import { AdminCourses } from "@/components/dashboard/admin/views/courses";
+import { AdminStudents } from "@/components/dashboard/admin/views/students";
 import { AdminUniversities } from "@/components/dashboard/admin/views/universities";
 import { AdminExams } from "@/components/dashboard/admin/views/exams";
 import { SuperAdminSchools } from "@/components/dashboard/admin/views/schools";
@@ -67,6 +69,7 @@ const STUDENT_VIEW_FEATURE: Partial<Record<StudentView, FeatureKey>> = {
 };
 const TEACHER_VIEW_FEATURE: Partial<Record<TeacherView, FeatureKey>> = {
   "ai-reviews": "ai_tutor",
+  subjects: "subjects",
 };
 const ADMIN_VIEW_FEATURE: Partial<Record<AdminView, FeatureKey>> = {
   universities: "career",
@@ -248,7 +251,9 @@ export default function Home() {
           )}
           {adminView === "schools" && <SuperAdminSchools />}
           {adminView === "users" && <AdminUsers currentUser={user} />}
+          {adminView === "courses" && <AdminCourses />}
           {adminView === "classes" && <AdminClasses />}
+          {adminView === "students" && <AdminStudents />}
           {adminView === "universities" && <AdminUniversities />}
           {adminView === "exams" && <AdminExams />}
           {adminView === "announcements" && <AnnouncementsView />}

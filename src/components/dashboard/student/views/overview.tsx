@@ -7,8 +7,8 @@ import {
   BookMarked, MapPin,
 } from "lucide-react";
 import {
-  api, studentsApi, subjectsApi,
-  type User, type GradeAverage, type Assignment, type Student, type Subject,
+  api, assignmentsApi, enrollmentsApi, studentsApi,
+  type User, type GradeAverage, type Assignment, type Student, type Enrollment,
 } from "@/lib/api";
 import type { StudentView } from "@/components/dashboard/student/student-shell";
 import { StatCard, SectionCard, EmptyState, Pill } from "@/components/ui/dashboard-ui";
@@ -28,28 +28,30 @@ function gradeColor(p: number) {
 export function StudentOverview({ user, onNavigate }: Props) {
   const [gradeAvg, setGradeAvg] = useState<GradeAverage | null>(null);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
-  const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [myGroups, setMyGroups] = useState<Enrollment[]>([]);
   const [studentProfile, setStudentProfile] = useState<Student | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function load() {
       try {
-        // Элссэн хичээлүүд (student record-оос хамааралгүй)
-        subjectsApi.enrolled().then(setSubjects).catch(() => setSubjects([]));
+        // Суралцаж буй бүлгүүд + бүх бүлгийн даалгавар (нэг сурагч олон бүлэгт байж болно)
+        enrollmentsApi
+          .mine()
+          .then((list) =>
+            setMyGroups(list.filter((e) => e.status === "active" || e.status === "paused")),
+          )
+          .catch(() => setMyGroups([]));
+        assignmentsApi.forStudent().then(setAssignments).catch(() => setAssignments([]));
 
-        // Сурагчийн өөрийн бүртгэл (student record id-г дүн/даалгаварт ашиглана)
+        // Сурагчийн өөрийн бүртгэл (student record id-г үнэлгээнд ашиглана)
         const mine = await studentsApi.me().catch(() => null);
         if (mine) {
           setStudentProfile(mine);
-          const [avg, asgn] = await Promise.allSettled([
-            api.get<GradeAverage>(`/grades/student/${mine.id}/average`),
-            mine.class_id
-              ? api.get<Assignment[]>(`/assignments/class/${mine.class_id}`)
-              : Promise.resolve([] as Assignment[]),
-          ]);
-          if (avg.status === "fulfilled") setGradeAvg(avg.value);
-          if (asgn.status === "fulfilled") setAssignments(asgn.value);
+          const avg = await api
+            .get<GradeAverage>(`/grades/student/${mine.id}/average`)
+            .catch(() => null);
+          if (avg) setGradeAvg(avg);
         }
       } catch {
         // errors handled per-call
@@ -109,9 +111,11 @@ export function StudentOverview({ user, onNavigate }: Props) {
               <CalendarDays className="size-3.5" />
               {dateStr}
             </p>
-            {studentProfile?.class && (
+            {myGroups.length > 0 && (
               <span className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-xs font-medium ring-1 ring-white/15">
-                {studentProfile.class.name}
+                {myGroups.length === 1
+                  ? myGroups[0].class?.name
+                  : `${myGroups.length} бүлэгт суралцаж байна`}
               </span>
             )}
           </div>
@@ -135,7 +139,7 @@ export function StudentOverview({ user, onNavigate }: Props) {
             <AlertTriangle className="size-5 text-amber-600" />
           </div>
           <div className="flex-1">
-            <p className="text-sm font-semibold text-amber-900">Анхаарах хичээлүүд</p>
+            <p className="text-sm font-semibold text-amber-900">Анхаарах курс</p>
             <p className="mt-0.5 text-sm text-amber-700">
               {lowSubjects.map((s) => (
                 <span key={s.subject} className="mr-1">
@@ -163,13 +167,13 @@ export function StudentOverview({ user, onNavigate }: Props) {
         <StatCard
           icon={TrendingUp}
           tone="navy"
-          label="Жигнэсэн дүн"
+          label="Дундаж үнэлгээ"
           value={
             gradeAvg
               ? `${Math.round(gradeAvg.weighted_final ?? gradeAvg.average_percentage)}%`
               : "—"
           }
-          hint={`${gradeAvg?.total_grades ?? 0} дүн · жигнэсэн эцсийн`}
+          hint={`${gradeAvg?.total_grades ?? 0} үнэлгээ`}
         />
         <StatCard
           icon={FileText}
@@ -185,38 +189,44 @@ export function StudentOverview({ user, onNavigate }: Props) {
         <StatCard
           icon={CheckCircle2}
           tone="amber"
-          label="Хичээлийн тоо"
-          value={gradeAvg?.by_subject.length ?? 0}
+          label="Миний бүлэг"
+          value={myGroups.length}
           hint={
             lowSubjects.length > 0
-              ? `${lowSubjects.length} хичээлд анхаарал хэрэгтэй`
-              : "Бүх хичээл тогтвортой"
+              ? `${lowSubjects.length} курст анхаарал хэрэгтэй`
+              : "Бүгд тогтвортой"
           }
         />
       </div>
 
-      {/* Миний хичээлүүд (элссэн) */}
-      {subjects.length > 0 && (
+      {/* Миний бүлгүүд */}
+      {myGroups.length > 0 && (
         <div>
           <h2 className="mb-3 flex items-center gap-2 text-base font-semibold text-foreground">
             <BookMarked className="size-4 text-primary" />
-            Миний хичээлүүд
+            Миний бүлгүүд
           </h2>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {subjects.map((s) => (
+            {myGroups.map((e) => (
               <div
-                key={s.id}
+                key={e.id}
                 className="flex items-center gap-3 rounded-2xl border border-border bg-card p-4 shadow-sm"
               >
                 <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
                   <BookMarked className="size-5" />
                 </div>
                 <div className="min-w-0">
-                  <p className="truncate font-semibold text-foreground">{s.name}</p>
-                  {s.room && (
+                  <p className="truncate font-semibold text-foreground">{e.class?.name}</p>
+                  <p className="truncate text-xs text-muted-foreground">
+                    {e.class?.teacher
+                      ? `${e.class.teacher.first_name} ${e.class.teacher.last_name}`
+                      : "Багш оноогоогүй"}
+                    {e.status === "paused" ? " · Түр чөлөөтэй" : ""}
+                  </p>
+                  {e.class?.room && (
                     <p className="flex items-center gap-1 text-xs text-muted-foreground">
                       <MapPin className="size-3" />
-                      {s.room}
+                      {e.class.room}
                     </p>
                   )}
                 </div>
@@ -231,7 +241,7 @@ export function StudentOverview({ user, onNavigate }: Props) {
         {gradeAvg && gradeAvg.by_subject.length > 0 && (
           <SectionCard
             icon={TrendingUp}
-            title="Хичээл тус бүрийн дүн"
+            title="Курс тус бүрийн үнэлгээ"
             action={
               studentProfile?.id && hasFeature(user, "academic_terms") ? (
                 <button

@@ -248,6 +248,25 @@ export interface LoginResponse {
   user: User;
 }
 
+export type BillingType = "one_time" | "monthly";
+
+/** Курс — төвийн каталогийн нэгж. Үнэ бүхэл төгрөгөөр. */
+export interface Course {
+  id: number;
+  name: string;
+  category: string | null;
+  description: string | null;
+  total_sessions: number | null;
+  duration_weeks: number | null;
+  default_price: number;
+  billing_type: BillingType;
+  is_active: boolean;
+  group_count?: number;
+}
+
+export type GroupStatus = "planned" | "active" | "completed" | "cancelled";
+
+/** Бүлэг (backend: class) — курсийн тодорхой ээлж */
 export interface ClassRoom {
   id: number;
   school_id: number;
@@ -258,18 +277,41 @@ export interface ClassRoom {
     last_name: string;
     email: string;
   } | null;
+  course_id: number | null;
+  course?: {
+    id: number;
+    name: string;
+    billing_type: BillingType;
+    default_price: number;
+  } | null;
   name: string;
-  grade_level: string;
-  academic_year: number;
+  start_date: string | null;
+  end_date: string | null;
+  capacity: number | null;
+  /** Бүлгийн өөрийн үнэ; null бол курсийн үнийг дагана */
+  price: number | null;
+  effective_price: number;
+  room: string | null;
+  status: GroupStatus;
+  /** Суудал эзэлж буй (идэвхтэй + түр чөлөөтэй) сурагчийн тоо */
+  enrolled_count: number;
+  grade_level: string | null;
+  academic_year: number | null;
   is_active: boolean;
   created_at: string;
+}
+
+export interface StudentGroupRef {
+  enrollment_id: number;
+  class_id: number;
+  name: string;
+  status: EnrollmentStatus;
+  course_name: string | null;
 }
 
 export interface Student {
   id: number;
   school_id: number;
-  class_id: number | null;
-  class?: { id: number; name: string; grade_level: string } | null;
   user_id: number | null;
   user?: {
     id: number;
@@ -281,8 +323,64 @@ export interface Student {
   last_name: string | null;
   student_code: string | null;
   date_of_birth: string | null;
+  phone: string | null;
+  guardian_name: string | null;
+  guardian_phone: string | null;
+  note: string | null;
   is_active: boolean;
+  /** Төвд бүртгүүлсэн огноо */
   enrolled_at: string;
+  /** Суралцаж буй бүлгүүд */
+  groups: StudentGroupRef[];
+  /** @deprecated "үндсэн бүлэг" — `groups`-ыг ашигла */
+  class_id: number | null;
+  /** @deprecated */
+  class?: { id: number; name: string } | null;
+}
+
+export type EnrollmentStatus = "active" | "paused" | "completed" | "dropped";
+
+/** Элсэлт — сурагч ↔ бүлэг. Үнийн талбарууд багшид ирэхгүй. */
+export interface Enrollment {
+  id: number;
+  student_id: number;
+  class_id: number;
+  status: EnrollmentStatus;
+  enrolled_at: string;
+  ended_at: string | null;
+  note: string | null;
+  agreed_price?: number | null;
+  discount?: number;
+  base_price?: number;
+  final_price?: number;
+  student: {
+    id: number;
+    student_code: string | null;
+    first_name: string | null;
+    last_name: string | null;
+    phone: string | null;
+    guardian_name: string | null;
+    guardian_phone: string | null;
+    user: { id: number; first_name: string; last_name: string } | null;
+  } | null;
+  class: {
+    id: number;
+    name: string;
+    status: GroupStatus;
+    start_date: string | null;
+    end_date: string | null;
+    room: string | null;
+    course: { id: number; name: string; billing_type: BillingType } | null;
+    teacher: { id: number; first_name: string; last_name: string } | null;
+  } | null;
+  created_at: string;
+}
+
+export interface TeacherContact {
+  id: number;
+  first_name: string;
+  last_name: string;
+  groups: string[];
 }
 
 export interface AttendanceSummary {
@@ -602,12 +700,13 @@ export interface ClassPerformance {
   by_student: Array<{
     student_id: number;
     student_code: string | null;
+    name: string;
     average: number;
     grade_count: number;
   }>;
   by_subject: Array<{ subject: string; average: number }>;
-  top: Array<{ student_id: number; student_code: string | null; average: number }>;
-  bottom: Array<{ student_id: number; student_code: string | null; average: number }>;
+  top: Array<{ student_id: number; student_code: string | null; name: string; average: number }>;
+  bottom: Array<{ student_id: number; student_code: string | null; name: string; average: number }>;
 }
 
 export interface ClassAttendanceAnalytics {
@@ -624,6 +723,7 @@ export interface AtRiskResult {
   students: Array<{
     student_id: number;
     student_code: string | null;
+    name: string;
     class_id: number | null;
     average_grade: number | null;
     attendance_rate: number | null;
@@ -636,6 +736,7 @@ export interface SchoolDashboard {
   students: number;
   classes: number;
   teachers: number;
+  active_enrollments: number;
   today_attendance_rate: number | null;
   overall_average_grade: number;
 }
@@ -667,18 +768,38 @@ export interface AcceptInvitationDto {
   password: string;
   phone?: string;
 }
+/** Засах үед сонголтот талбарыг цэвэрлэхийн тулд `null` илгээнэ */
 export interface CreateClassDto {
   name: string;
-  grade_level: string;
-  academic_year: number;
-  teacher_id?: number;
+  course_id?: number | null;
+  teacher_id?: number | null;
+  start_date?: string | null;
+  end_date?: string | null;
+  capacity?: number | null;
+  price?: number | null;
+  room?: string | null;
+  status?: GroupStatus;
+}
+export interface CreateCourseDto {
+  name: string;
+  category?: string;
+  description?: string;
+  total_sessions?: number;
+  duration_weeks?: number;
+  default_price?: number;
+  billing_type?: BillingType;
 }
 export interface CreateStudentDto {
-  first_name?: string;
-  last_name?: string;
+  first_name?: string | null;
+  last_name?: string | null;
+  phone?: string | null;
+  guardian_name?: string | null;
+  guardian_phone?: string | null;
+  note?: string | null;
+  student_code?: string | null;
+  date_of_birth?: string | null;
+  /** Үүсгэхдээ шууд элсүүлэх бүлэг */
   class_id?: number;
-  student_code?: string;
-  date_of_birth?: string;
 }
 export interface UpsertSlotDto {
   class_id: number;
@@ -764,6 +885,7 @@ export const usersApi = {
   remove: (id: number) => api.delete<void>(`/users/${id}`),
 };
 
+/** Бүлгүүд (backend зам нь `/classes` хэвээр) */
 export const classesApi = {
   list: (teacherId?: number) =>
     api.get<ClassRoom[]>(`/classes${teacherId ? `?teacher_id=${teacherId}` : ""}`),
@@ -772,6 +894,52 @@ export const classesApi = {
   update: (id: number, dto: Partial<CreateClassDto>) =>
     api.patch<ClassRoom>(`/classes/${id}`, dto),
   remove: (id: number) => api.delete<void>(`/classes/${id}`),
+};
+
+export const coursesApi = {
+  list: (includeInactive = false) =>
+    api.get<Course[]>(`/courses${includeInactive ? "?include_inactive=true" : ""}`),
+  create: (dto: CreateCourseDto) => api.post<Course>("/courses", dto),
+  update: (id: number, dto: Partial<CreateCourseDto> & { is_active?: boolean }) =>
+    api.patch<Course>(`/courses/${id}`, dto),
+  archive: (id: number) => api.delete<{ id: number; archived: boolean }>(`/courses/${id}`),
+};
+
+export const enrollmentsApi = {
+  list: (params: { classId?: number; studentId?: number; status?: EnrollmentStatus } = {}) => {
+    const q = new URLSearchParams();
+    if (params.classId) q.set("class_id", String(params.classId));
+    if (params.studentId) q.set("student_id", String(params.studentId));
+    if (params.status) q.set("status", params.status);
+    const qs = q.toString();
+    return api.get<Enrollment[]>(`/enrollments${qs ? `?${qs}` : ""}`);
+  },
+  /** Нэвтэрсэн сурагчийн бүлгүүд */
+  mine: () => api.get<Enrollment[]>("/enrollments/mine"),
+  /** Сурагч/эцэг эхийн холбогдох багш нар */
+  myTeachers: () => api.get<TeacherContact[]>("/enrollments/my-teachers"),
+  forStudent: (studentId: number) =>
+    api.get<Enrollment[]>(`/enrollments/student/${studentId}`),
+  enroll: (dto: {
+    student_id: number;
+    class_id: number;
+    enrolled_at?: string;
+    agreed_price?: number;
+    discount?: number;
+    note?: string;
+  }) => api.post<Enrollment>("/enrollments", dto),
+  update: (
+    id: number,
+    dto: {
+      status?: EnrollmentStatus;
+      agreed_price?: number | null;
+      discount?: number;
+      note?: string | null;
+    },
+  ) => api.patch<Enrollment>(`/enrollments/${id}`, dto),
+  transfer: (id: number, classId: number) =>
+    api.post<Enrollment>(`/enrollments/${id}/transfer`, { class_id: classId }),
+  remove: (id: number) => api.delete<{ id: number; deleted: boolean }>(`/enrollments/${id}`),
 };
 
 export const studentsApi = {
@@ -787,6 +955,9 @@ export const studentsApi = {
       student_code?: string;
       class_id?: number;
       date_of_birth?: string;
+      phone?: string;
+      guardian_name?: string;
+      guardian_phone?: string;
       email?: string;
       password?: string;
     }>,
@@ -794,6 +965,7 @@ export const studentsApi = {
     api.post<{
       created: number;
       withLogin?: number;
+      enrolled?: number;
       failed: number;
       errors: Array<{ row: number; reason: string }>;
     }>("/students/bulk", { students }),
@@ -953,6 +1125,8 @@ export const attendanceApi = {
 
 export const assignmentsApi = {
   my: () => api.get<Assignment[]>("/assignments/my"),
+  /** Нэвтэрсэн сурагчийн бүх бүлгийн даалгавар */
+  forStudent: () => api.get<Assignment[]>("/assignments/student"),
   byClass: (classId: number, status?: string) =>
     api.get<Assignment[]>(`/assignments/class/${classId}${status ? `?status=${status}` : ""}`),
   get: (id: number) => api.get<Assignment>(`/assignments/${id}`),

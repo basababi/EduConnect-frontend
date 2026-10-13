@@ -44,19 +44,17 @@ import {
 import {
   api,
   submissionsApi,
-  subjectsApi,
   downloadFile,
   type ClassRoom,
   type Assignment,
   type Submission,
-  type Subject,
 } from "@/lib/api";
+import { groupSubject } from "@/lib/terms";
 import { toast } from "sonner";
 
 export function TeacherAssignments() {
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [classes, setClasses] = useState<ClassRoom[]>([]);
-  const [allSubjects, setAllSubjects] = useState<Subject[]>([]);
   const [selectedClass, setSelectedClass] = useState<string>("all");
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
@@ -67,7 +65,6 @@ export function TeacherAssignments() {
     class_id: "",
     title: "",
     description: "",
-    subject: "",
     due_date: "",
   });
 
@@ -75,19 +72,12 @@ export function TeacherAssignments() {
     Promise.all([
       api.get<Assignment[]>("/assignments/my").catch(() => []),
       api.get<ClassRoom[]>("/classes").catch(() => []),
-      subjectsApi.mine().catch(() => [] as Subject[]),
-    ]).then(([a, c, s]) => {
+    ]).then(([a, c]) => {
       setAssignments(a);
       setClasses(c);
-      setAllSubjects(s);
       setLoading(false);
     });
   }, []);
-
-  // Диалогт сонгосон бүлгийн хичээлүүд
-  const formSubjects = allSubjects.filter(
-    (s) => String(s.class_id) === form.class_id,
-  );
 
   const filtered = assignments.filter((a) => {
     const matchClass = selectedClass === "all" || a.class_id.toString() === selectedClass;
@@ -103,22 +93,25 @@ export function TeacherAssignments() {
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
-    if (!form.class_id || !form.subject) {
-      toast.error("Бүлэг болон хичээлээ сонгоно уу");
+    const group = classes.find((c) => String(c.id) === form.class_id);
+    if (!group) {
+      toast.error("Бүлгээ сонгоно уу");
       return;
     }
     try {
       await api.post("/assignments", {
-        class_id: parseInt(form.class_id),
+        class_id: group.id,
         title: form.title,
         description: form.description,
-        subject: form.subject,
-        due_date: form.due_date,
+        // Бүлэг = нэг курс тул "хичээл" нь бүлгийн курсийн нэр
+        subject: groupSubject(group),
+        // Сонгосон өдрийн төгсгөл хүртэл хүчинтэй (өнөөдрийг сонгоход "өнгөрсөн" болохгүй)
+        due_date: `${form.due_date}T23:59:59`,
         status: "active",
       });
       toast.success("Даалгавар үүслээ");
       setAddOpen(false);
-      setForm({ class_id: "", title: "", description: "", subject: "", due_date: "" });
+      setForm({ class_id: "", title: "", description: "", due_date: "" });
       const fresh = await api.get<Assignment[]>("/assignments/my");
       setAssignments(fresh);
     } catch (err) {
@@ -188,7 +181,7 @@ export function TeacherAssignments() {
                 <Label>Бүлэг</Label>
                 <Select
                   value={form.class_id}
-                  onValueChange={(v) => setForm({ ...form, class_id: v, subject: "" })}
+                  onValueChange={(v) => setForm({ ...form, class_id: v })}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Сонгох" />
@@ -220,45 +213,15 @@ export function TeacherAssignments() {
                   rows={3}
                 />
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label>Хичээл</Label>
-                  <Select
-                    value={form.subject}
-                    onValueChange={(v) => setForm({ ...form, subject: v })}
-                    disabled={!form.class_id || formSubjects.length === 0}
-                  >
-                    <SelectTrigger>
-                      <SelectValue
-                        placeholder={
-                          !form.class_id
-                            ? "Эхлээд бүлэг"
-                            : formSubjects.length === 0
-                              ? "Хичээл алга"
-                              : "Сонгох"
-                        }
-                      />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {formSubjects.map((s) => (
-                        <SelectItem key={s.id} value={s.name}>
-                          {s.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label>Дуусах хугацаа</Label>
-                  <Input
-                    type="date"
-                    value={form.due_date}
-                    onChange={(e) =>
-                      setForm({ ...form, due_date: e.target.value })
-                    }
-                    required
-                  />
-                </div>
+              <div>
+                <Label>Дуусах хугацаа</Label>
+                <Input
+                  type="date"
+                  value={form.due_date}
+                  min={new Date().toISOString().slice(0, 10)}
+                  onChange={(e) => setForm({ ...form, due_date: e.target.value })}
+                  required
+                />
               </div>
               <Button type="submit" className="w-full">
                 Үүсгэх

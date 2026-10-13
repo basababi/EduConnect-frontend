@@ -16,7 +16,7 @@ import {
 import { Send, MessageSquare, Plus, BookOpen } from "lucide-react";
 import {
   messagesApi,
-  classesApi,
+  enrollmentsApi,
   getStoredUser,
   type Conversation,
   type Message,
@@ -46,23 +46,19 @@ export function StudentMessages() {
   useEffect(() => {
     Promise.all([
       messagesApi.conversations().catch(() => [] as Conversation[]),
-      classesApi.list().catch(() => []),
+      enrollmentsApi.myTeachers().catch(() => []),
     ])
-      .then(([convs, classes]) => {
+      .then(([convs, myTeachers]) => {
         setConversations(convs);
-        // Багш нарыг ангиудаас гаргана (сурагч /users-д хандах эрхгүй)
-        const map = new Map<number, TeacherOption>();
-        for (const c of classes) {
-          if (c.teacher) {
-            map.set(c.teacher.id, {
-              id: c.teacher.id,
-              first_name: c.teacher.first_name,
-              last_name: c.teacher.last_name,
-              className: c.name,
-            });
-          }
-        }
-        setTeachers([...map.values()]);
+        // Зөвхөн өөрийн (хүүхдийнхээ) суралцаж буй бүлгүүдийн багш нар
+        setTeachers(
+          myTeachers.map((t) => ({
+            id: t.id,
+            first_name: t.first_name,
+            last_name: t.last_name,
+            className: t.groups.join(", "),
+          })),
+        );
       })
       .finally(() => setLoading(false));
   }, []);

@@ -18,6 +18,8 @@ import {
   Building2,
   Megaphone,
   Trophy,
+  Library,
+  UserRound,
 } from "lucide-react";
 import { authApi, type User } from "@/lib/api";
 import { hasFeature, type FeatureKey } from "@/lib/features";
@@ -28,7 +30,9 @@ export type AdminView =
   | "overview"
   | "schools"
   | "users"
+  | "courses"
   | "classes"
+  | "students"
   | "universities"
   | "exams"
   | "announcements"
@@ -45,8 +49,10 @@ interface NavItem {
 
 const ADMIN_NAV: NavItem[] = [
   { id: "overview", label: "Нүүр", icon: Home },
-  { id: "users", label: "Хэрэглэгчид", icon: Users },
+  { id: "courses", label: "Курсууд", icon: Library },
   { id: "classes", label: TERMS.group.many, icon: BookOpen },
+  { id: "students", label: "Сурагчид", icon: UserRound },
+  { id: "users", label: "Хэрэглэгчид", icon: Users },
   { id: "universities", label: "Их сургууль (карьер)", icon: GraduationCap, feature: "career" },
   { id: "exams", label: "Нийтийн шалгалт", icon: Trophy, feature: "public_exams" },
   { id: "announcements", label: "Зарлал", icon: Megaphone },

@@ -30,7 +30,7 @@ const SECTIONS: ShellNavSection[] = [
     label: "Заах үйл ажиллагаа",
     items: [
       { id: "overview", label: "Нүүр", icon: Home, primary: true },
-      { id: "subjects", label: "Миний хичээлүүд", icon: BookMarked },
+      { id: "subjects", label: "Миний хичээлүүд", icon: BookMarked, feature: "subjects" },
       { id: "students", label: "Сурагчид", icon: Users },
       { id: "attendance", label: "Ирц бүртгэл", icon: CheckSquare, primary: true, shortLabel: "Ирц" },
       { id: "grades", label: "Дүн шинжилгээ", icon: BarChart3, primary: true, shortLabel: "Дүн" },

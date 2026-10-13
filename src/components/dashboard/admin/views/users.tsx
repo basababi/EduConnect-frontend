@@ -37,14 +37,7 @@ import {
   RotateCcw,
 } from "lucide-react";
 import { toast } from "sonner";
-import {
-  invitationsApi,
-  classesApi,
-  usersApi,
-  type User,
-  type Invitation,
-  type ClassRoom,
-} from "@/lib/api";
+import { invitationsApi, usersApi, type User, type Invitation } from "@/lib/api";
 import { ROLE_LABELS, roleLabel } from "@/lib/terms";
 
 const ROLE_COLOR: Record<string, string> = {
@@ -73,7 +66,6 @@ const INVITE_STATUS: Record<string, { label: string; cls: string; icon: typeof C
 export function AdminUsers({ currentUser }: { currentUser: User }) {
   const [users, setUsers] = useState<User[]>([]);
   const [invitations, setInvitations] = useState<Invitation[]>([]);
-  const [classes, setClasses] = useState<ClassRoom[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
@@ -83,12 +75,10 @@ export function AdminUsers({ currentUser }: { currentUser: User }) {
     Promise.all([
       usersApi.list().catch(() => [] as User[]),
       invitationsApi.list().catch(() => [] as Invitation[]),
-      classesApi.list().catch(() => [] as ClassRoom[]),
     ])
-      .then(([u, inv, cls]) => {
+      .then(([u, inv]) => {
         setUsers(u);
         setInvitations(inv);
-        setClasses(cls);
       })
       .finally(() => setLoading(false));
   }, []);
@@ -344,12 +334,7 @@ export function AdminUsers({ currentUser }: { currentUser: User }) {
         </TabsContent>
       </Tabs>
 
-      <InviteDialog
-        open={inviteOpen}
-        onOpenChange={setInviteOpen}
-        classes={classes}
-        onCreated={loadAll}
-      />
+      <InviteDialog open={inviteOpen} onOpenChange={setInviteOpen} onCreated={loadAll} />
     </div>
   );
 
@@ -435,24 +420,20 @@ function EmptyState({
 function InviteDialog({
   open,
   onOpenChange,
-  classes,
   onCreated,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
-  classes: ClassRoom[];
   onCreated: () => void;
 }) {
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<"admin" | "teacher" | "parent">("teacher");
-  const [classId, setClassId] = useState<string>("");
   const [submitting, setSubmitting] = useState(false);
   const [createdLink, setCreatedLink] = useState<string | null>(null);
 
   function reset() {
     setEmail("");
     setRole("teacher");
-    setClassId("");
     setCreatedLink(null);
   }
 
@@ -460,11 +441,7 @@ function InviteDialog({
     e.preventDefault();
     setSubmitting(true);
     try {
-      const inv = await invitationsApi.create({
-        email: email.trim(),
-        role,
-        class_id: classId ? Number(classId) : undefined,
-      });
+      const inv = await invitationsApi.create({ email: email.trim(), role });
       toast.success("Урилга илгээгдлээ");
       onCreated();
       if (inv.token) {
@@ -562,28 +539,6 @@ function InviteDialog({
                 </SelectContent>
               </Select>
             </div>
-
-            {role === "teacher" && classes.length > 0 && (
-              <div className="space-y-2">
-                <Label>Бүлэг (заавал биш)</Label>
-                <Select
-                  value={classId}
-                  onValueChange={setClassId}
-                  disabled={submitting}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Бүлэг сонгох" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {classes.map((c) => (
-                      <SelectItem key={c.id} value={String(c.id)}>
-                        {c.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
 
             <DialogFooter>
               <Button

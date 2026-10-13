@@ -34,13 +34,12 @@ import { toast } from "sonner";
 import {
   classesApi,
   materialsApi,
-  subjectsApi,
   uploadFile,
   downloadFile,
   type ClassRoom,
   type Material,
-  type Subject,
 } from "@/lib/api";
+import { groupSubject } from "@/lib/terms";
 
 function fmtSize(bytes: number | null): string {
   if (!bytes) return "";
@@ -52,25 +51,23 @@ function fmtSize(bytes: number | null): string {
 export function TeacherMaterials() {
   const [classes, setClasses] = useState<ClassRoom[]>([]);
   const [classId, setClassId] = useState<string>("");
-  const [allSubjects, setAllSubjects] = useState<Subject[]>([]);
   const [materials, setMaterials] = useState<Material[]>([]);
   const [loadingClasses, setLoadingClasses] = useState(true);
   const [loadingMats, setLoadingMats] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
 
   useEffect(() => {
-    Promise.all([
-      classesApi.list().catch(() => [] as ClassRoom[]),
-      subjectsApi.mine().catch(() => [] as Subject[]),
-    ]).then(([cls, subs]) => {
-      setClasses(cls);
-      setAllSubjects(subs);
-      if (cls.length) setClassId(String(cls[0].id));
-      setLoadingClasses(false);
-    });
+    classesApi
+      .list()
+      .then((cls) => {
+        setClasses(cls);
+        if (cls.length) setClassId(String(cls[0].id));
+      })
+      .catch(() => setClasses([]))
+      .finally(() => setLoadingClasses(false));
   }, []);
 
-  const classSubjects = allSubjects.filter((s) => String(s.class_id) === classId);
+  const group = classes.find((c) => String(c.id) === classId) ?? null;
 
   const load = useCallback(() => {
     if (!classId) return;
@@ -109,7 +106,7 @@ export function TeacherMaterials() {
         <div className="flex items-center gap-2">
           {!loadingClasses && classes.length > 0 && (
             <Select value={classId} onValueChange={setClassId}>
-              <SelectTrigger className="w-36">
+              <SelectTrigger className="w-56 max-w-full">
                 <SelectValue placeholder="Бүлэг" />
               </SelectTrigger>
               <SelectContent>
@@ -194,13 +191,12 @@ export function TeacherMaterials() {
         </div>
       )}
 
-      {classId && (
+      {group && (
         <UploadDialog
-          key={`${classId}-${addOpen}`}
+          key={`${group.id}-${addOpen}`}
           open={addOpen}
           onOpenChange={setAddOpen}
-          classId={Number(classId)}
-          subjects={classSubjects}
+          group={group}
           onSaved={load}
         />
       )}
@@ -222,17 +218,14 @@ function EmptyCard({ text }: { text: string }) {
 function UploadDialog({
   open,
   onOpenChange,
-  classId,
-  subjects,
+  group,
   onSaved,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
-  classId: number;
-  subjects: Subject[];
+  group: ClassRoom;
   onSaved: () => void;
 }) {
-  const [subject, setSubject] = useState(subjects[0]?.name ?? "");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [file, setFile] = useState<File | null>(null);
@@ -240,10 +233,6 @@ function UploadDialog({
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!subject) {
-      toast.error("Хичээлээ сонгоно уу");
-      return;
-    }
     if (!file) {
       toast.error("Файл сонгоно уу");
       return;
@@ -252,8 +241,8 @@ function UploadDialog({
     try {
       const meta = await uploadFile("/files", file);
       await materialsApi.create({
-        class_id: classId,
-        subject,
+        class_id: group.id,
+        subject: groupSubject(group),
         title: title.trim(),
         description: description.trim() || undefined,
         file_id: meta.id,
@@ -276,41 +265,17 @@ function UploadDialog({
         <DialogHeader>
           <DialogTitle>Хичээлийн материал нэмэх</DialogTitle>
           <DialogDescription>
-            Сонгосон бүлгийн сурагчид энэ файлыг харах боломжтой болно.
+            «{group.name}» бүлгийн сурагчид энэ файлыг харах боломжтой болно.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label>Хичээл</Label>
-            <Select
-              value={subject}
-              onValueChange={setSubject}
-              disabled={submitting || subjects.length === 0}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder={subjects.length === 0 ? "Хичээл алга" : "Сонгох"} />
-              </SelectTrigger>
-              <SelectContent>
-                {subjects.map((s) => (
-                  <SelectItem key={s.id} value={s.name}>
-                    {s.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {subjects.length === 0 && (
-              <p className="text-xs text-amber-600">
-                Энэ бүлэгт хичээл үүсгээгүй байна. &quot;Миний хичээлүүд&quot;-ээс үүсгэнэ үү.
-              </p>
-            )}
-          </div>
           <div className="space-y-2">
             <Label htmlFor="mat-title">Гарчиг</Label>
             <Input
               id="mat-title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="Бүлэг 3 — Лекцийн тэмдэглэл"
+              placeholder="3-р сэдэв — Лекцийн тэмдэглэл"
               required
               disabled={submitting}
             />
