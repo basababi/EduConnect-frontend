@@ -1,5 +1,10 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+/* ui/ доторх shadcn ("radix-nova") компонентууд `data-open:`, `data-closed:`, `data-active:`,
+   `data-horizontal:` зэрэг вариантад тулгуурладаг — тэдгээрийг энэ файл тодорхойлно.
+   Импортлоогүй үед Tabs босоо эвдэрч, идэвхтэй таб ялгарахгүй, цонх нээгдэх/хаагдах
+   анимац ажилладаггүй байв. */
+@import "shadcn/tailwind.css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -73,6 +78,9 @@
   --ring: oklch(0.60 0.12 250);                /* navy-leaning focus ring */
   --chart-1: #1b2b4b;                          /* Navy */
   --chart-2: #f5a623;                          /* Amber */
+  /* Нэг цуваат графикийн өнгө: брэндийн navy-ийн өнгөний дунд шат. Цагаан гадаргуу дээр
+     3:1-ээс дээш ялгарна (navy нь хэт бараан, amber нь 2:1 — багана/шугамд тохирохгүй). */
+  --chart-series: #3a6fb5;
   --chart-3: oklch(0.55 0.13 165);            /* Emerald */
   --chart-4: oklch(0.55 0.13 280);            /* Purple */
   --chart-5: oklch(0.70 0.10 200);            /* Cyan */
@@ -107,6 +115,7 @@
   --ring: oklch(0.70 0.15 160);
   --chart-1: oklch(0.70 0.15 160);
   --chart-2: oklch(0.65 0.18 50);
+  --chart-series: #5b93e0;
   --chart-3: oklch(0.55 0.13 280);
   --chart-4: oklch(0.70 0.10 200);
   --chart-5: oklch(0.32 0.09 255);

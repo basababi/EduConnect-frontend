@@ -105,7 +105,7 @@ export function StatCard({
           </span>
         )}
       </div>
-      <p className={cn("mt-3 text-2xl font-bold tracking-tight tabular-nums", t.value)}>
+      <p className={cn("mt-3 text-2xl font-bold tracking-tight", t.value)}>
         {value}
       </p>
       <p className="text-xs font-medium text-muted-foreground">{label}</p>

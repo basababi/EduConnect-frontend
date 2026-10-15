@@ -106,6 +106,7 @@ export function ImportStudentsDialog({
   const [rows, setRows] = useState<ParsedRow[]>([]);
   const [fileName, setFileName] = useState("");
   const [defaultClassId, setDefaultClassId] = useState<string>("");
+  const [createInvoices, setCreateInvoices] = useState(false);
   const [importing, setImporting] = useState(false);
   const [result, setResult] = useState<{
     created: number;
@@ -119,6 +120,7 @@ export function ImportStudentsDialog({
     setRows([]);
     setFileName("");
     setDefaultClassId("");
+    setCreateInvoices(false);
     setResult(null);
   }
 
@@ -192,7 +194,7 @@ export function ImportStudentsDialog({
         email: r.email,
         password: r.password,
       }));
-      const res = await studentsApi.bulkCreate(payload);
+      const res = await studentsApi.bulkCreate(payload, createInvoices);
       setResult(res);
       onImported();
       if (res.created > 0) toast.success(`${res.created} сурагч импортлогдлоо`);
@@ -331,6 +333,26 @@ export function ImportStudentsDialog({
                   </SelectContent>
                 </Select>
               </div>
+            )}
+
+            {classes.length > 0 && (
+              <label className="flex cursor-pointer items-start gap-2.5 rounded-lg border p-3">
+                <input
+                  type="checkbox"
+                  checked={createInvoices}
+                  onChange={(e) => setCreateInvoices(e.target.checked)}
+                  className="mt-0.5 size-4 shrink-0 accent-primary"
+                />
+                <span className="text-xs">
+                  <span className="text-sm font-medium text-foreground">
+                    Бүлэгт элсүүлсэн сурагч бүрд нэхэмжлэх гаргах
+                  </span>
+                  <span className="mt-0.5 block text-muted-foreground">
+                    Одоо суралцаж, төлбөрөө аль хэдийн төлсөн сурагчдыг оруулж байгаа бол
+                    сонгохгүй — эс бөгөөс бүгд өртэй харагдана.
+                  </span>
+                </span>
+              </label>
             )}
 
             {rows.length > 0 && (

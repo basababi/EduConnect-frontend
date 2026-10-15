@@ -11,10 +11,22 @@ import {
   CheckCircle2,
   TrendingUp,
   ArrowRight,
+  AlertTriangle,
+  Wallet,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { api, type User, type ClassRoom, type Student, type AttendanceSummary } from "@/lib/api";
+import { StatCard } from "@/components/ui/dashboard-ui";
+import {
+  api,
+  financeApi,
+  type User,
+  type ClassRoom,
+  type Student,
+  type AttendanceSummary,
+  type FinanceSummary,
+} from "@/lib/api";
 import type { AdminView } from "@/components/dashboard/admin/admin-shell";
+import { formatMoney } from "@/lib/format";
 import { groupSubtitle, roleLabel } from "@/lib/terms";
 
 const ROLE_COLOR: Record<string, string> = {
@@ -35,16 +47,21 @@ export function AdminOverview({ user, onNavigate }: Props) {
   const [classes, setClasses] = useState<ClassRoom[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
   const [attendanceSummaries, setAttendanceSummaries] = useState<AttendanceSummary[]>([]);
+  const [finance, setFinance] = useState<FinanceSummary | null>(null);
   const [loading, setLoading] = useState(true);
+  // Платформын админд төвийн санхүү байхгүй
+  const showFinance = user.role === "admin";
 
   useEffect(() => {
     async function load() {
       try {
-        const [us, cls, sts] = await Promise.allSettled([
+        const [us, cls, sts, fin] = await Promise.allSettled([
           api.get<User[]>("/users"),
           api.get<ClassRoom[]>("/classes"),
           api.get<Student[]>("/students"),
+          showFinance ? financeApi.summary() : Promise.resolve(null),
         ]);
+        if (fin.status === "fulfilled") setFinance(fin.value);
         if (us.status === "fulfilled") setUsers(us.value);
         if (cls.status === "fulfilled") {
           setClasses(cls.value);
@@ -76,7 +93,7 @@ export function AdminOverview({ user, onNavigate }: Props) {
       }
     }
     load();
-  }, []);
+  }, [showFinance]);
 
   const today = new Date();
   const dateStr = today.toLocaleDateString("mn-MN", {
@@ -118,6 +135,40 @@ export function AdminOverview({ user, onNavigate }: Props) {
         </h1>
         <p className="text-sm text-gray-500 mt-0.5">{dateStr}</p>
       </div>
+
+      {/* Санхүүгийн тойм — дарахад "Төлбөр" дэлгэц рүү */}
+      {finance && (
+        <button
+          type="button"
+          onClick={() => onNavigate("finance")}
+          className="block w-full rounded-2xl text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          aria-label="Төлбөрийн дэлгэц рүү очих"
+        >
+          <div className="grid gap-3 sm:grid-cols-3">
+            <StatCard
+              icon={TrendingUp}
+              tone="emerald"
+              label="Энэ сард орсон"
+              value={formatMoney(finance.collected_this_month)}
+              hint={`Өнөөдөр ${formatMoney(finance.collected_today)}`}
+            />
+            <StatCard
+              icon={Wallet}
+              tone="amber"
+              label="Нийт авлага"
+              value={formatMoney(finance.outstanding)}
+              hint={`${finance.debtor_count} сурагч`}
+            />
+            <StatCard
+              icon={AlertTriangle}
+              tone="rose"
+              label="Хугацаа хэтэрсэн"
+              value={formatMoney(finance.overdue)}
+              hint={`${finance.overdue_invoice_count} нэхэмжлэх`}
+            />
+          </div>
+        </button>
+      )}
 
       {/* Stats */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

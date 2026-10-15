@@ -126,10 +126,11 @@ async function doRefresh(): Promise<boolean> {
 
 export const api = {
   get: <T>(path: string) => request<T>(path, { method: "GET" }),
-  post: <T>(path: string, body?: unknown) =>
+  post: <T>(path: string, body?: unknown, headers?: Record<string, string>) =>
     request<T>(path, {
       method: "POST",
       body: body ? JSON.stringify(body) : undefined,
+      headers,
     }),
   patch: <T>(path: string, body?: unknown) =>
     request<T>(path, {
@@ -353,6 +354,10 @@ export interface Enrollment {
   discount?: number;
   base_price?: number;
   final_price?: number;
+  /** Сарын төлбөр: аль өдрийг хүртэл нэхэмжилсэн (зөвхөн админд) */
+  billed_until?: string | null;
+  /** Энэ элсэлтийн нэхэмжилсэн / төлсөн / үлдэгдэл / хугацаа хэтэрсэн дүн (зөвхөн админд) */
+  billing?: EnrollmentBilling;
   student: {
     id: number;
     student_code: string | null;
@@ -374,6 +379,180 @@ export interface Enrollment {
     teacher: { id: number; first_name: string; last_name: string } | null;
   } | null;
   created_at: string;
+}
+
+export interface EnrollmentBilling {
+  invoiced: number;
+  paid: number;
+  balance: number;
+  overdue: number;
+}
+
+// ===== Төлбөр =====
+export type InvoiceStatus = "issued" | "partially_paid" | "paid" | "void";
+export type PaymentMethod = "cash" | "transfer" | "card" | "qpay";
+/** Гараар бүртгэж болох хэлбэрүүд (QPay-г зөвхөн QPay-ийн холболт үүсгэнэ) */
+export type ManualPaymentMethod = Exclude<PaymentMethod, "qpay">;
+export type PaymentKind = "payment" | "refund";
+export type PaymentStatus = "pending" | "confirmed" | "failed" | "voided";
+
+export interface InvoiceStudentRef {
+  id: number;
+  first_name: string | null;
+  last_name: string | null;
+  student_code: string | null;
+  // Доорх нь зөвхөн админд ирнэ
+  phone?: string | null;
+  guardian_name?: string | null;
+  guardian_phone?: string | null;
+  is_active?: boolean;
+}
+
+/** Мөнгөний хөдөлгөөний нэг мөр: төлбөр эсвэл буцаалт. Дүн үргэлж эерэг. */
+export interface Payment {
+  id: number;
+  invoice_id: number;
+  kind: PaymentKind;
+  refund_of_id: number | null;
+  receipt_no: number;
+  amount: number;
+  method: PaymentMethod;
+  status: PaymentStatus;
+  paid_on: string;
+  reference: string | null;
+  note: string | null;
+  received_by: number | null;
+  received_by_name: string | null;
+  void_reason: string | null;
+  voided_at: string | null;
+  created_at: string;
+}
+
+/**
+ * Нэхэмжлэх. Бүх дүн бүхэл төгрөгөөр.
+ *   total = amount − discount · balance = total − paid_amount
+ * "Хугацаа хэтэрсэн" нь төлөв биш — `is_overdue`-г сервер төлөх огнооноос тооцно.
+ */
+export interface Invoice {
+  id: number;
+  number: number;
+  description: string;
+  amount: number;
+  discount: number;
+  total: number;
+  paid_amount: number;
+  balance: number;
+  due_date: string;
+  period_start: string | null;
+  period_end: string | null;
+  status: InvoiceStatus;
+  is_overdue: boolean;
+  days_overdue: number;
+  student_id: number;
+  enrollment_id: number | null;
+  student: InvoiceStudentRef | null;
+  class: { id: number; name: string } | null;
+  course: { id: number; name: string } | null;
+  created_at: string;
+  // Доорх нь зөвхөн админд ирнэ
+  note?: string | null;
+  void_reason?: string | null;
+  voided_at?: string | null;
+  created_by?: number | null;
+  /** Зөвхөн нэг нэхэмжлэхийг авахад */
+  payments?: Payment[];
+}
+
+/** Сурагч/эцэг эхэд харагдах төлбөрийн мөр (дотоод мэдээлэлгүй) */
+export interface CustomerPayment {
+  id: number;
+  kind: PaymentKind;
+  receipt_no: number;
+  amount: number;
+  method: PaymentMethod;
+  paid_on: string;
+}
+
+export interface MyInvoice extends Omit<Invoice, "payments"> {
+  payments: CustomerPayment[];
+}
+
+/** Нэг төлбөрийн баримт (хэвлэхэд) */
+export interface PaymentReceipt extends Payment {
+  invoice: Invoice;
+  center: { name: string; phone: string | null; address: string | null };
+}
+
+export interface LedgerPayment extends Payment {
+  invoice: { id: number; number: number; description: string };
+  student: InvoiceStudentRef | null;
+}
+
+export interface PagedResult<T, Totals> {
+  items: T[];
+  page: number;
+  limit: number;
+  count: number;
+  totals: Totals;
+}
+
+export type InvoiceListStatus = "open" | "overdue" | "paid" | "void" | "all";
+
+export interface MoneyFlow {
+  collected: number;
+  refunded: number;
+  net: number;
+}
+
+export interface MonthlyFlow extends MoneyFlow {
+  /** "YYYY-MM" */
+  month: string;
+}
+
+export interface FinanceSummary {
+  today: string;
+  collected_today: number;
+  collected_this_month: number;
+  collected_prev_month: number;
+  outstanding: number;
+  open_invoice_count: number;
+  overdue: number;
+  overdue_invoice_count: number;
+  debtor_count: number;
+  monthly: MonthlyFlow[];
+}
+
+export interface Debtor {
+  student_id: number;
+  first_name: string | null;
+  last_name: string | null;
+  student_code: string | null;
+  phone: string | null;
+  guardian_name: string | null;
+  guardian_phone: string | null;
+  is_active: boolean;
+  groups: string[];
+  invoice_count: number;
+  balance: number;
+  overdue: number;
+  oldest_due: string | null;
+  days_overdue: number;
+}
+
+export interface DebtorsReport {
+  today: string;
+  items: Debtor[];
+  totals: { balance: number; overdue: number; count: number };
+}
+
+export interface RevenueReport {
+  from: string;
+  to: string;
+  totals: MoneyFlow;
+  by_month: MonthlyFlow[];
+  /** course_id/course_name null = курстэй холбоогүй (бусад) орлого */
+  by_course: Array<MoneyFlow & { course_id: number | null; course_name: string | null; students: number }>;
+  by_method: Array<MoneyFlow & { method: PaymentMethod }>;
 }
 
 export interface TeacherContact {
@@ -800,6 +979,8 @@ export interface CreateStudentDto {
   date_of_birth?: string | null;
   /** Үүсгэхдээ шууд элсүүлэх бүлэг */
   class_id?: number;
+  /** `class_id`-тай үед нэхэмжлэх гаргах эсэх (default: true) */
+  create_invoice?: boolean;
 }
 export interface UpsertSlotDto {
   class_id: number;
@@ -927,6 +1108,10 @@ export const enrollmentsApi = {
     agreed_price?: number;
     discount?: number;
     note?: string;
+    /** Нэхэмжлэх гаргах эсэх (default: true) */
+    create_invoice?: boolean;
+    /** Нэхэмжлэхийн төлөх сүүлийн өдөр (YYYY-MM-DD) */
+    due_date?: string;
   }) => api.post<Enrollment>("/enrollments", dto),
   update: (
     id: number,
@@ -961,6 +1146,8 @@ export const studentsApi = {
       email?: string;
       password?: string;
     }>,
+    /** Элсүүлсэн сурагч бүрд нэхэмжлэх гаргах эсэх (default: үгүй) */
+    createInvoices = false,
   ) =>
     api.post<{
       created: number;
@@ -968,10 +1155,130 @@ export const studentsApi = {
       enrolled?: number;
       failed: number;
       errors: Array<{ row: number; reason: string }>;
-    }>("/students/bulk", { students }),
+    }>("/students/bulk", { students, create_invoices: createInvoices }),
   update: (id: number, dto: Partial<CreateStudentDto>) =>
     api.patch<Student>(`/students/${id}`, dto),
   remove: (id: number) => api.delete<void>(`/students/${id}`),
+};
+
+/**
+ * Давхар хүсэлтээс хамгаалах түлхүүр. Төлбөр бүртгэх цонх нээгдэх бүрт НЭГ түлхүүр үүсгэж,
+ * тэр цонхны бүх оролдлогод ашиглана — давхар товшилт, сүлжээний дахин оролдлого нэг л
+ * төлбөр үүсгэнэ (сервер ижил түлхүүртэй хүсэлтэд анхны төлбөрийг буцаана).
+ */
+export function newIdempotencyKey(): string {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  // crypto.randomUUID нь зөвхөн secure context-д (https/localhost) байдаг
+  const part = () => Math.random().toString(36).slice(2);
+  return `${Date.now().toString(36)}-${part()}-${part()}`;
+}
+
+function toQuery(params: Record<string, string | number | undefined | null>): string {
+  const q = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (value !== undefined && value !== null && value !== "") q.set(key, String(value));
+  }
+  const qs = q.toString();
+  return qs ? `?${qs}` : "";
+}
+
+export const invoicesApi = {
+  list: (
+    params: {
+      status?: InvoiceListStatus;
+      student_id?: number;
+      enrollment_id?: number;
+      class_id?: number;
+      course_id?: number;
+      q?: string;
+      page?: number;
+      limit?: number;
+    } = {},
+  ) =>
+    api.get<PagedResult<Invoice, { total: number; paid: number; balance: number }>>(
+      `/invoices${toQuery(params)}`,
+    ),
+  /** Сурагч: өөрийн · эцэг эх: хүүхдүүдийнхээ нэхэмжлэх */
+  mine: () => api.get<MyInvoice[]>("/invoices/mine"),
+  get: (id: number) => api.get<Invoice>(`/invoices/${id}`),
+  create: (dto: {
+    student_id: number;
+    enrollment_id?: number;
+    description: string;
+    amount: number;
+    discount?: number;
+    due_date: string;
+    note?: string;
+  }) => api.post<Invoice>("/invoices", dto),
+  update: (
+    id: number,
+    dto: {
+      description?: string;
+      amount?: number;
+      discount?: number;
+      due_date?: string;
+      note?: string;
+    },
+  ) => api.patch<Invoice>(`/invoices/${id}`, dto),
+  void: (id: number, reason: string) => api.post<Invoice>(`/invoices/${id}/void`, { reason }),
+  restore: (id: number) => api.post<Invoice>(`/invoices/${id}/restore`),
+  addPayment: (
+    id: number,
+    dto: {
+      amount: number;
+      method: ManualPaymentMethod;
+      paid_on?: string;
+      reference?: string;
+      note?: string;
+    },
+    idempotencyKey: string,
+  ) =>
+    api.post<PaymentReceipt>(`/invoices/${id}/payments`, dto, {
+      "Idempotency-Key": idempotencyKey,
+    }),
+  /** Сарын төлбөрийн хугацаа нь болсон нэхэмжлэхүүдийг одоо үүсгэнэ */
+  generateMonthly: () =>
+    api.post<{ created: number; skipped: number; errors: number }>("/invoices/generate-monthly"),
+};
+
+export const paymentsApi = {
+  list: (
+    params: {
+      from?: string;
+      to?: string;
+      method?: PaymentMethod;
+      student_id?: number;
+      page?: number;
+      limit?: number;
+    } = {},
+  ) => api.get<PagedResult<LedgerPayment, MoneyFlow>>(`/payments${toQuery(params)}`),
+  receipt: (id: number) => api.get<PaymentReceipt>(`/payments/${id}`),
+  void: (id: number, reason: string) =>
+    api.post<PaymentReceipt>(`/payments/${id}/void`, { reason }),
+  refund: (
+    id: number,
+    dto: {
+      amount: number;
+      method: ManualPaymentMethod;
+      paid_on?: string;
+      reason: string;
+      /** true = үлдсэн авлагыг хасаж нэхэмжлэхийг хаана (сурагч цааш төлөхгүй) */
+      close_invoice?: boolean;
+    },
+    idempotencyKey: string,
+  ) =>
+    api.post<PaymentReceipt>(`/payments/${id}/refund`, dto, {
+      "Idempotency-Key": idempotencyKey,
+    }),
+};
+
+export const financeApi = {
+  summary: () => api.get<FinanceSummary>("/finance/summary"),
+  debtors: () => api.get<DebtorsReport>("/finance/debtors"),
+  revenue: (from?: string, to?: string) =>
+    api.get<RevenueReport>(`/finance/revenue${toQuery({ from, to })}`),
 };
 
 export const analyticsApi = {

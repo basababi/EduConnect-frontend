@@ -2,6 +2,7 @@
 
 import {
   Home, BookOpen, Briefcase, MessageSquare, Calendar, Bot, FileText, Megaphone, FolderOpen, Trophy,
+  Wallet,
 } from "lucide-react";
 import { type User } from "@/lib/api";
 import {
@@ -17,6 +18,7 @@ export type StudentView =
   | "schedule"
   | "submissions"
   | "materials"
+  | "payments"
   | "announcements"
   | "messages";
 
@@ -28,6 +30,7 @@ const SECTIONS: ShellNavSection[] = [
       { id: "schedule", label: "Хуваарь", icon: Calendar, primary: true },
       { id: "submissions", label: "Даалгавар", icon: FileText, primary: true },
       { id: "materials", label: "Хичээлийн материал", icon: FolderOpen },
+      { id: "payments", label: "Төлбөр", icon: Wallet },
       { id: "announcements", label: "Зарлал", icon: Megaphone },
       { id: "messages", label: "Мессеж", icon: MessageSquare },
     ],

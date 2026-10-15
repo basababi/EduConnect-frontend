@@ -20,6 +20,7 @@ import {
   Trophy,
   Library,
   UserRound,
+  Wallet,
 } from "lucide-react";
 import { authApi, type User } from "@/lib/api";
 import { hasFeature, type FeatureKey } from "@/lib/features";
@@ -33,6 +34,7 @@ export type AdminView =
   | "courses"
   | "classes"
   | "students"
+  | "finance"
   | "universities"
   | "exams"
   | "announcements"
@@ -52,6 +54,7 @@ const ADMIN_NAV: NavItem[] = [
   { id: "courses", label: "Курсууд", icon: Library },
   { id: "classes", label: TERMS.group.many, icon: BookOpen },
   { id: "students", label: "Сурагчид", icon: UserRound },
+  { id: "finance", label: "Төлбөр", icon: Wallet },
   { id: "users", label: "Хэрэглэгчид", icon: Users },
   { id: "universities", label: "Их сургууль (карьер)", icon: GraduationCap, feature: "career" },
   { id: "exams", label: "Нийтийн шалгалт", icon: Trophy, feature: "public_exams" },

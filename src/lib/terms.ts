@@ -63,6 +63,20 @@ export const BILLING_TYPE_LABELS = {
   monthly: "Сар бүр",
 } as const;
 
+export const INVOICE_STATUS_LABELS = {
+  issued: "Төлөгдөөгүй",
+  partially_paid: "Хэсэгчлэн төлсөн",
+  paid: "Төлөгдсөн",
+  void: "Хүчингүй",
+} as const;
+
+export const PAYMENT_METHOD_LABELS = {
+  cash: "Бэлэн",
+  transfer: "Шилжүүлэг",
+  card: "Карт",
+  qpay: "QPay",
+} as const;
+
 /**
  * Бүлгийн жагсаалтад нэрийн доор харуулах товч мөр: курс · хугацаа
  * (ЕБС-ийн "10-р анги · 2025"-ыг орлоно).

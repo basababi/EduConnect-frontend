@@ -23,9 +23,14 @@ import {
   Trash2,
   UserPlus,
   UserRoundPlus,
+  Wallet,
 } from "lucide-react";
 import { toast } from "sonner";
 import { ImportStudentsDialog } from "@/components/dashboard/admin/import-students-dialog";
+import {
+  StudentInvoicesDialog,
+  type FixedStudent,
+} from "@/components/dashboard/admin/finance-dialogs";
 import {
   EnrollDialog,
   StudentFormDialog,
@@ -58,6 +63,7 @@ export function AdminStudents() {
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<Student | null>(null);
   const [enrolling, setEnrolling] = useState<Student | null>(null);
+  const [billingOf, setBillingOf] = useState<FixedStudent | null>(null);
   const [importOpen, setImportOpen] = useState(false);
 
   const load = useCallback(() => {
@@ -234,6 +240,9 @@ export function AdminStudents() {
                         <DropdownMenuItem onClick={() => setEnrolling(s)}>
                           <UserRoundPlus className="mr-2 h-4 w-4" /> Бүлэгт элсүүлэх
                         </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setBillingOf({ id: s.id, name })}>
+                          <Wallet className="mr-2 h-4 w-4" /> Төлбөр, нэхэмжлэх
+                        </DropdownMenuItem>
                         <DropdownMenuItem
                           onClick={() => {
                             setEditing(s);
@@ -277,6 +286,10 @@ export function AdminStudents() {
         onOpenChange={setImportOpen}
         classes={enrollableGroups(groups)}
         onImported={load}
+      />
+      <StudentInvoicesDialog
+        student={billingOf}
+        onOpenChange={(v) => !v && setBillingOf(null)}
       />
     </div>
   );

@@ -51,11 +51,13 @@ import { AdminUsers } from "@/components/dashboard/admin/views/users";
 import { AdminClasses } from "@/components/dashboard/admin/views/classes";
 import { AdminCourses } from "@/components/dashboard/admin/views/courses";
 import { AdminStudents } from "@/components/dashboard/admin/views/students";
+import { AdminFinance } from "@/components/dashboard/admin/views/finance";
 import { AdminUniversities } from "@/components/dashboard/admin/views/universities";
 import { AdminExams } from "@/components/dashboard/admin/views/exams";
 import { SuperAdminSchools } from "@/components/dashboard/admin/views/schools";
 import { AdminReports } from "@/components/dashboard/admin/views/reports";
 import { AnnouncementsView } from "@/components/dashboard/announcements-view";
+import { MyPaymentsView } from "@/components/dashboard/my-payments-view";
 import { authApi, getStoredUser, updateStoredUser, type User } from "@/lib/api";
 import { hasFeature, type FeatureKey } from "@/lib/features";
 
@@ -210,6 +212,7 @@ export default function Home() {
           {studentView === "schedule" && <StudentSchedule />}
           {studentView === "submissions" && <StudentSubmissions />}
           {studentView === "materials" && <StudentMaterials />}
+          {studentView === "payments" && <MyPaymentsView />}
           {studentView === "announcements" && <AnnouncementsView />}
           {studentView === "messages" && <StudentMessages />}
         </StudentShell>
@@ -231,6 +234,7 @@ export default function Home() {
           {parentView === "attendance" && <ParentAttendance />}
           {parentView === "grades" && <ParentGrades />}
           {parentView === "messages" && <ParentMessages />}
+          {parentView === "payments" && <MyPaymentsView />}
           {parentView === "announcements" && <AnnouncementsView />}
         </ParentShell>
       );
@@ -254,6 +258,7 @@ export default function Home() {
           {adminView === "courses" && <AdminCourses />}
           {adminView === "classes" && <AdminClasses />}
           {adminView === "students" && <AdminStudents />}
+          {adminView === "finance" && <AdminFinance />}
           {adminView === "universities" && <AdminUniversities />}
           {adminView === "exams" && <AdminExams />}
           {adminView === "announcements" && <AnnouncementsView />}

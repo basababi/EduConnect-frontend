@@ -28,9 +28,48 @@ import {
   type ClassRoom,
   type Student,
 } from "@/lib/api";
-import { formatMoney, toIntOrUndefined } from "@/lib/format";
+import { addDaysLocal, formatMoney, toIntOrUndefined, todayLocal } from "@/lib/format";
 
 const NONE = "none";
+
+/** "Нэхэмжлэх гаргах" сонголт — элсүүлэх, сурагч бүртгэх цонхонд */
+function InvoiceToggle({
+  checked,
+  onChange,
+  disabled,
+  monthly,
+}: {
+  checked: boolean;
+  onChange: (v: boolean) => void;
+  disabled?: boolean;
+  monthly?: boolean;
+}) {
+  return (
+    <label className="flex cursor-pointer items-start gap-2.5">
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={(e) => onChange(e.target.checked)}
+        disabled={disabled}
+        className="mt-0.5 size-4 shrink-0 accent-primary"
+      />
+      <span className="text-sm">
+        <span className="font-medium text-foreground">
+          {monthly ? "Эхний сарын нэхэмжлэх гаргах" : "Нэхэмжлэх гаргах"}
+        </span>
+        <span className="mt-0.5 block text-xs text-muted-foreground">
+          {checked
+            ? monthly
+              ? "Дараагийн саруудын нэхэмжлэх автоматаар гарна."
+              : "Төлбөрийг «Төлбөр» цэснээс бүртгэнэ."
+            : monthly
+              ? "Энэ сарыг төлсөнд тооцож, дараагийн сараас нэхэмжилнэ."
+              : "Өмнө нь төлсөн сурагчид — авлага үүсэхгүй."}
+        </span>
+      </span>
+    </label>
+  );
+}
 
 /** Элсүүлж болох бүлгүүд: устгаагүй, дуусаагүй/цуцлагдаагүй */
 export function enrollableGroups(groups: ClassRoom[]): ClassRoom[] {
@@ -38,7 +77,12 @@ export function enrollableGroups(groups: ClassRoom[]): ClassRoom[] {
 }
 
 function seatsLabel(g: ClassRoom): string {
+  if (isFull(g)) return `дүүрсэн ${g.enrolled_count}/${g.capacity}`;
   return g.capacity ? `${g.enrolled_count}/${g.capacity}` : `${g.enrolled_count}`;
+}
+
+function isFull(g: ClassRoom): boolean {
+  return g.capacity != null && g.enrolled_count >= g.capacity;
 }
 
 /* ──────────────────────────────────────────────
@@ -70,9 +114,11 @@ export function StudentFormDialog({
   const [dob, setDob] = useState(editing?.date_of_birth?.slice(0, 10) ?? "");
   const [note, setNote] = useState(editing?.note ?? "");
   const [classId, setClassId] = useState<string>(defaultClassId ? String(defaultClassId) : NONE);
+  const [createInvoice, setCreateInvoice] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
   const options = enrollableGroups(groups);
+  const chosenGroup = options.find((g) => String(g.id) === classId) ?? null;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -99,6 +145,7 @@ export function StudentFormDialog({
         : await studentsApi.create({
             ...dto,
             class_id: classId !== NONE ? Number(classId) : undefined,
+            create_invoice: classId !== NONE ? createInvoice : undefined,
           });
       toast.success(editing ? "Сурагчийн мэдээлэл шинэчлэгдлээ" : "Сурагч бүртгэгдлээ");
       onSaved(saved);
@@ -165,7 +212,7 @@ export function StudentFormDialog({
                   <SelectContent>
                     <SelectItem value={NONE}>Одоохондоо үгүй</SelectItem>
                     {options.map((g) => (
-                      <SelectItem key={g.id} value={String(g.id)}>
+                      <SelectItem key={g.id} value={String(g.id)} disabled={isFull(g)}>
                         {g.name} ({seatsLabel(g)})
                       </SelectItem>
                     ))}
@@ -174,6 +221,23 @@ export function StudentFormDialog({
               </div>
             )}
           </div>
+          {!editing && chosenGroup && chosenGroup.effective_price > 0 && (
+            <div className="rounded-lg border bg-muted/30 p-3">
+              <InvoiceToggle
+                checked={createInvoice}
+                onChange={setCreateInvoice}
+                disabled={submitting}
+                monthly={chosenGroup.course?.billing_type === "monthly"}
+              />
+              {createInvoice && (
+                <p className="mt-2 pl-6.5 text-xs text-muted-foreground">
+                  Дүн: {formatMoney(chosenGroup.effective_price)}
+                  {chosenGroup.course?.billing_type === "monthly" ? " / сар" : ""} · хөнгөлөлтийг
+                  дараа нь нэхэмжлэх дээр засаж болно.
+                </p>
+              )}
+            </div>
+          )}
           <div className="space-y-2">
             <Label htmlFor="sf-note">Тэмдэглэл</Label>
             <Textarea id="sf-note" value={note} onChange={(e) => setNote(e.target.value)} rows={2} disabled={submitting} />
@@ -218,12 +282,17 @@ export function EnrollDialog({
   const [discount, setDiscount] = useState("");
   const [note, setNote] = useState("");
   const [search, setSearch] = useState("");
+  const [createInvoice, setCreateInvoice] = useState(true);
+  const [dueDate, setDueDate] = useState(() => addDaysLocal(todayLocal(), 7));
   const [submitting, setSubmitting] = useState(false);
 
   const groupOptions = enrollableGroups(groups);
   const selectedGroup = group ?? groups.find((g) => String(g.id) === classId) ?? null;
   const price = selectedGroup?.effective_price ?? 0;
   const discountValue = toIntOrUndefined(discount) ?? 0;
+  const monthly = selectedGroup?.course?.billing_type === "monthly";
+  // Төлөх дүн 0 (үнэгүй / бүтэн хөнгөлөлт) бол нэхэмжлэх гарахгүй — сонголт харуулахгүй
+  const billable = price - discountValue > 0;
 
   // Аль хэдийн тухайн бүлэгт байгаа сурагчийг сонголтоос хасна
   const studentOptions = useMemo(() => {
@@ -257,8 +326,12 @@ export function EnrollDialog({
         class_id: Number(classId),
         discount: discountValue || undefined,
         note: note.trim() || undefined,
+        create_invoice: billable ? createInvoice : undefined,
+        due_date: billable && createInvoice ? dueDate : undefined,
       });
-      toast.success("Элсүүллээ");
+      toast.success(
+        billable && createInvoice ? "Элсүүлж, нэхэмжлэх гаргалаа" : "Элсүүллээ",
+      );
       onSaved();
       onOpenChange(false);
     } catch (err) {
@@ -311,7 +384,7 @@ export function EnrollDialog({
                 </SelectTrigger>
                 <SelectContent>
                   {groupOptions.map((g) => (
-                    <SelectItem key={g.id} value={String(g.id)}>
+                    <SelectItem key={g.id} value={String(g.id)} disabled={isFull(g)}>
                       {g.name} ({seatsLabel(g)})
                     </SelectItem>
                   ))}
@@ -341,11 +414,39 @@ export function EnrollDialog({
                 />
               </div>
               <div className="flex items-center justify-between border-t pt-2 text-sm">
-                <span className="font-medium text-foreground">Төлөх дүн</span>
+                <span className="font-medium text-foreground">
+                  Төлөх дүн{monthly ? " (сар бүр)" : ""}
+                </span>
                 <span className="font-bold text-primary">
                   {formatMoney(Math.max(0, price - discountValue))}
                 </span>
               </div>
+              {billable && (
+                <div className="space-y-2 border-t pt-3">
+                  <InvoiceToggle
+                    checked={createInvoice}
+                    onChange={setCreateInvoice}
+                    disabled={submitting}
+                    monthly={monthly}
+                  />
+                  {createInvoice && (
+                    <div className="flex items-center justify-between gap-3 pl-6.5">
+                      <Label htmlFor="en-due" className="text-sm font-normal text-muted-foreground">
+                        Төлөх сүүлийн өдөр
+                      </Label>
+                      <Input
+                        id="en-due"
+                        type="date"
+                        value={dueDate}
+                        onChange={(e) => setDueDate(e.target.value)}
+                        required
+                        className="h-8 w-40"
+                        disabled={submitting}
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
 

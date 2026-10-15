@@ -54,8 +54,13 @@ import {
   UserMinus,
   UserPlus,
   Users,
+  Wallet,
 } from "lucide-react";
 import { ImportStudentsDialog } from "@/components/dashboard/admin/import-students-dialog";
+import {
+  StudentInvoicesDialog,
+  type FixedStudent,
+} from "@/components/dashboard/admin/finance-dialogs";
 import {
   EnrollDialog,
   StudentFormDialog,
@@ -242,8 +247,14 @@ export function AdminClasses() {
             return (
               <Card
                 key={g.id}
-                className="group cursor-pointer transition-all hover:shadow-md hover:ring-1 hover:ring-primary/20"
+                role="button"
+                tabIndex={0}
+                aria-label={`${g.name} — дэлгэрэнгүй`}
+                className="group cursor-pointer transition-all hover:shadow-md hover:ring-1 hover:ring-primary/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 onClick={() => setDetailId(g.id)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && e.target === e.currentTarget) setDetailId(g.id);
+                }}
               >
                 <CardContent className="space-y-3 p-4">
                   <div className="flex items-start justify-between gap-2">
@@ -579,6 +590,7 @@ function GroupDetail({
   const [enrollOpen, setEnrollOpen] = useState(false);
   const [newStudentOpen, setNewStudentOpen] = useState(false);
   const [transferring, setTransferring] = useState<Enrollment | null>(null);
+  const [billingOf, setBillingOf] = useState<FixedStudent | null>(null);
 
   const reload = useCallback(() => {
     Promise.all([
@@ -649,6 +661,17 @@ function GroupDetail({
               {formatMoney(e.final_price)}
               {e.discount ? ` (−${formatMoney(e.discount)})` : ""}
             </span>
+            {/* Төлбөрийн байдал: үлдэгдэлтэй бол хэд, хугацаа хэтэрсэн эсэх */}
+            {e.billing && e.billing.balance > 0 ? (
+              <span
+                className={`font-medium ${e.billing.overdue > 0 ? "text-rose-700" : "text-amber-700"}`}
+              >
+                {e.billing.overdue > 0 ? "Хугацаа хэтэрсэн · " : ""}
+                үлдэгдэл {formatMoney(e.billing.balance)}
+              </span>
+            ) : e.billing && e.billing.invoiced > 0 ? (
+              <span className="font-medium text-emerald-700">төлсөн</span>
+            ) : null}
           </p>
         </div>
         <Badge variant="secondary" className={`shrink-0 text-[11px] ${ENROLLMENT_STATUS_CLS[e.status]}`}>
@@ -661,6 +684,12 @@ function GroupDetail({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
+            <DropdownMenuItem
+              onClick={() => setBillingOf({ id: e.student_id, name, enrollmentId: e.id })}
+            >
+              <Wallet className="mr-2 h-4 w-4" /> Төлбөр, нэхэмжлэх
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
             {e.status === "active" && (
               <DropdownMenuItem onClick={() => setStatus(e, "paused")}>
                 <Pause className="mr-2 h-4 w-4" /> Түр чөлөө олгох
@@ -779,6 +808,11 @@ function GroupDetail({
         onOpenChange={(v) => !v && setTransferring(null)}
         onDone={refresh}
       />
+      <StudentInvoicesDialog
+        student={billingOf}
+        onOpenChange={(v) => !v && setBillingOf(null)}
+        onChanged={reload}
+      />
     </>
   );
 }
@@ -819,7 +853,8 @@ function TransferDialog({
           <DialogTitle>Өөр бүлэгт шилжүүлэх</DialogTitle>
           <DialogDescription>
             {enrollment?.student ? studentDisplayName(enrollment.student) : ""} — одоогийн
-            бүлгээс гарч, сонгосон бүлгийн үнээр элсэнэ.
+            бүлгээс гарч, сонгосон бүлэгт элсэнэ. Шинэ нэхэмжлэх гарахгүй: өмнөх нэхэмжлэх,
+            төлбөр хэвээр үлдэнэ. Үнэ өөр бол нэхэмжлэхээ гараар засна уу.
           </DialogDescription>
         </DialogHeader>
         <Select value={target} onValueChange={setTarget} disabled={submitting}>
