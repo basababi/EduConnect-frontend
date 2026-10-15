@@ -26,6 +26,8 @@ import {
   type Conversation,
 } from "@/lib/api";
 import type { ParentView } from "@/components/dashboard/parent/parent-shell";
+import { attendanceApi } from "@/lib/api";
+import { addDaysLocal, todayLocal } from "@/lib/format";
 
 interface MyChild {
   student_id: number;
@@ -101,16 +103,24 @@ export function ParentOverview({ user, onNavigate }: Props) {
           if (convs.status === "fulfilled") setConversations(convs.value);
           if (asgn.status === "fulfilled") setAssignments(asgn.value);
 
-          if (classId) {
-            const today = new Date();
-            const start = new Date(today);
-            start.setDate(start.getDate() - 30);
-            const sum = await api
-              .get<AttendanceSummary>(
-                `/attendance/summary/${classId}?start_date=${start.toISOString().split("T")[0]}&end_date=${today.toISOString().split("T")[0]}`,
-              )
-              .catch(() => null);
-            if (sum) setAttendance(sum);
+          // Хүүхдийн бүх бүлгийн ирц (сүүлийн 30 хоног). Өмнө нь бүлгийн хураангуй
+          // (/attendance/summary — зөвхөн админ/багш) дууддаг байсан тул үргэлж хоосон байв.
+          const sum = await attendanceApi
+            .studentSummary(studentId, addDaysLocal(todayLocal(), -30), todayLocal())
+            .catch(() => null);
+          if (sum) {
+            setAttendance({
+              class_id: 0,
+              class_name: "",
+              subject: "",
+              date_range: { start: sum.from, end: sum.to },
+              total_records: sum.total,
+              present: sum.present,
+              absent: sum.absent,
+              late: sum.late,
+              excused: sum.excused,
+              attendance_rate: sum.attendance_rate ?? 0,
+            });
           }
         }
       } catch {

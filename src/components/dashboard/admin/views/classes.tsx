@@ -61,6 +61,8 @@ import {
   StudentInvoicesDialog,
   type FixedStudent,
 } from "@/components/dashboard/admin/finance-dialogs";
+import { GroupSessions, GroupTimetable } from "@/components/dashboard/admin/group-schedule";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   EnrollDialog,
   StudentFormDialog,
@@ -741,6 +743,13 @@ function GroupDetail({
         </SheetDescription>
       </SheetHeader>
 
+      <Tabs defaultValue="students" className="flex min-h-0 flex-1 flex-col gap-3">
+        <TabsList className="mx-4">
+          <TabsTrigger value="students">Сурагчид</TabsTrigger>
+          <TabsTrigger value="timetable">Хуваарь</TabsTrigger>
+          <TabsTrigger value="sessions">Хичээлүүд</TabsTrigger>
+        </TabsList>
+        <TabsContent value="students" className="flex min-h-0 flex-col gap-3">
       <div className="flex items-center justify-between gap-2 px-4">
         <p className="text-sm font-medium text-foreground">
           Сурагчид ({live.length}
@@ -784,6 +793,14 @@ function GroupDetail({
           </>
         )}
       </div>
+        </TabsContent>
+        <TabsContent value="timetable" className="scrollbar-slim overflow-y-auto px-4 pb-4">
+          <GroupTimetable group={group} onChanged={onChanged} />
+        </TabsContent>
+        <TabsContent value="sessions" className="scrollbar-slim overflow-y-auto px-4 pb-4">
+          <GroupSessions group={group} />
+        </TabsContent>
+      </Tabs>
 
       <EnrollDialog
         key={`enroll-${enrollOpen}`}

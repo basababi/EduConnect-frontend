@@ -67,6 +67,23 @@ export function monthStartLocal(date: string, monthOffset = 0): string {
   return `${dt.getFullYear()}-${pad2(dt.getMonth() + 1)}-01`;
 }
 
+/** "YYYY-MM-DD"-ийн ISO гараг: 1 = Даваа … 7 = Ням */
+export function isoWeekdayOf(date: string): number {
+  const [y, m, d] = date.split("-").map(Number);
+  const day = new Date(y, m - 1, d).getDay();
+  return day === 0 ? 7 : day;
+}
+
+/** Тухайн өдрийг агуулсан долоо хоногийн Даваа гараг */
+export function weekStartLocal(date: string): string {
+  return addDaysLocal(date, 1 - isoWeekdayOf(date));
+}
+
+/** Хуваарийн цагийн хүрээ: "18:00–19:30" */
+export function formatTimeRange(start: string, end: string): string {
+  return `${start}–${end}`;
+}
+
 /** Хоосон мөрийг undefined болгож, тоо руу хөрвүүлнэ (формын талбарт) */
 export function toIntOrUndefined(value: string): number | undefined {
   const v = value.replace(/[^0-9]/g, "");

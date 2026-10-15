@@ -76,6 +76,9 @@ import {
 } from "@/lib/format";
 import { INVOICE_STATUS_LABELS, PAYMENT_METHOD_LABELS } from "@/lib/terms";
 import { printReceipt } from "@/lib/print-receipt";
+import { ReasonDialog } from "@/components/dashboard/reason-dialog";
+
+export { ReasonDialog };
 
 const MANUAL_METHODS: ManualPaymentMethod[] = ["cash", "transfer", "card"];
 const NONE = "none";
@@ -585,109 +588,6 @@ function RefundForm({
             disabled={submitting || value < 1 || tooMuch}
           >
             {submitting ? "Бүртгэж байна..." : "Буцаалт бүртгэх"}
-          </Button>
-        </DialogFooter>
-      </form>
-    </>
-  );
-}
-
-/* ──────────────────────────────────────────────
-   Шалтгаан асуух (хүчингүй болгох, цуцлах) — хэн, яагаад гэдэг нь audit-д үлдэнэ
-   ────────────────────────────────────────────── */
-export function ReasonDialog({
-  open,
-  onOpenChange,
-  title,
-  description,
-  confirmLabel,
-  onConfirm,
-}: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  title: string;
-  description: string;
-  confirmLabel: string;
-  onConfirm: (reason: string) => Promise<void>;
-}) {
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-sm">
-        {open && (
-          <ReasonForm
-            title={title}
-            description={description}
-            confirmLabel={confirmLabel}
-            onCancel={() => onOpenChange(false)}
-            onConfirm={async (reason) => {
-              await onConfirm(reason);
-              onOpenChange(false);
-            }}
-          />
-        )}
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-function ReasonForm({
-  title,
-  description,
-  confirmLabel,
-  onCancel,
-  onConfirm,
-}: {
-  title: string;
-  description: string;
-  confirmLabel: string;
-  onCancel: () => void;
-  onConfirm: (reason: string) => Promise<void>;
-}) {
-  const [reason, setReason] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (reason.trim().length < 3) {
-      toast.error("Шалтгааныг бичнэ үү");
-      return;
-    }
-    setSubmitting(true);
-    try {
-      await onConfirm(reason.trim());
-    } catch (err) {
-      toast.error(errorMessage(err, "Амжилтгүй"));
-    } finally {
-      setSubmitting(false);
-    }
-  }
-
-  return (
-    <>
-      <DialogHeader>
-        <DialogTitle>{title}</DialogTitle>
-        <DialogDescription>{description}</DialogDescription>
-      </DialogHeader>
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="reason-text">Шалтгаан *</Label>
-          <Textarea
-            id="reason-text"
-            value={reason}
-            onChange={(e) => setReason(e.target.value)}
-            rows={3}
-            maxLength={300}
-            required
-            autoFocus
-            disabled={submitting}
-          />
-        </div>
-        <DialogFooter>
-          <Button type="button" variant="outline" onClick={onCancel} disabled={submitting}>
-            Болих
-          </Button>
-          <Button type="submit" variant="destructive-solid" disabled={submitting}>
-            {submitting ? "Түр хүлээнэ үү..." : confirmLabel}
           </Button>
         </DialogFooter>
       </form>

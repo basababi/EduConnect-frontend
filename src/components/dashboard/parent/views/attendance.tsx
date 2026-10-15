@@ -1,157 +1,238 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { api, type AttendanceSummary, type AttendanceRecord } from "@/lib/api";
+import { Skeleton } from "@/components/ui/skeleton";
+import { EmptyState, PageHeader, Pill } from "@/components/ui/dashboard-ui";
+import { CheckSquare, CircleCheck, Hourglass, Info, XCircle } from "lucide-react";
+import { cn } from "@/lib/utils";
+import {
+  api,
+  attendanceApi,
+  enrollmentsApi,
+  studentDisplayName,
+  type AttendanceRecord,
+  type AttendanceStatus,
+  type StudentAttendanceSummary,
+} from "@/lib/api";
+import { formatDate, formatTimeRange, isoWeekdayOf } from "@/lib/format";
+import { ATTENDANCE_STATUS_LABELS, WEEKDAY_SHORT } from "@/lib/terms";
+import { WeekSchedule } from "@/components/dashboard/sessions/session-ui";
 
-interface MyChild {
+interface ChildLink {
   student_id: number;
-  student: { id: number; user: { id: number; first_name: string; last_name: string } | null; class: { id: number; name: string } | null } | null;
+  student: {
+    id: number;
+    student_code: string | null;
+    first_name?: string | null;
+    last_name?: string | null;
+    user: { id: number; first_name: string; last_name: string } | null;
+  } | null;
 }
 
-const STATUS_LABEL: Record<string, string> = {
-  present: "Ирсэн",
-  absent: "Тасалсан",
-  late: "Хоцорсон",
-  excused: "Чөлөөтэй",
+const STATUS_PILL: Record<
+  AttendanceStatus,
+  { tone: "emerald" | "rose" | "amber" | "navy"; icon: typeof CircleCheck }
+> = {
+  present: { tone: "emerald", icon: CircleCheck },
+  absent: { tone: "rose", icon: XCircle },
+  late: { tone: "amber", icon: Hourglass },
+  excused: { tone: "navy", icon: Info },
 };
 
-const STATUS_COLOR: Record<string, string> = {
-  present: "bg-green-100 text-green-700",
-  absent: "bg-red-100 text-red-700",
-  late: "bg-orange-100 text-orange-700",
-  excused: "bg-blue-100 text-blue-700",
-};
+export function AttendancePill({ status }: { status: AttendanceStatus }) {
+  const meta = STATUS_PILL[status] ?? STATUS_PILL.present;
+  return (
+    <Pill tone={meta.tone} icon={meta.icon}>
+      {ATTENDANCE_STATUS_LABELS[status] ?? status}
+    </Pill>
+  );
+}
 
+const childName = (c: ChildLink) =>
+  c.student ? studentDisplayName(c.student) : `Сурагч #${c.student_id}`;
+
+/** Эцэг эх — хүүхдийн ирцийн хувь, хичээл бүрийн ирц, ирэх хичээлүүд */
 export function ParentAttendance() {
-  const [child, setChild] = useState<MyChild | null>(null);
-  const [summary, setSummary] = useState<AttendanceSummary | null>(null);
-  const [records, setRecords] = useState<AttendanceRecord[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [children, setChildren] = useState<ChildLink[] | null>(null);
+  const [childId, setChildId] = useState<number | null>(null);
 
   useEffect(() => {
-    async function load() {
-      try {
-        const children = await api.get<MyChild[]>("/parent-student/my-children").catch(() => [] as MyChild[]);
-        const myChild = children[0] ?? null;
-        setChild(myChild);
-
-        const classId = myChild?.student?.class?.id;
-        const studentId = myChild?.student?.id;
-
-        if (classId && studentId) {
-          const today = new Date();
-          const start = new Date(today);
-          start.setDate(start.getDate() - 30);
-          const startStr = start.toISOString().split("T")[0];
-          const endStr = today.toISOString().split("T")[0];
-
-          const [sum, recs] = await Promise.allSettled([
-            api.get<AttendanceSummary>(
-              `/attendance/summary/${classId}?start_date=${startStr}&end_date=${endStr}`
-            ),
-            api.get<AttendanceRecord[]>(
-              `/attendance/student/${studentId}?start_date=${startStr}&end_date=${endStr}`
-            ),
-          ]);
-          if (sum.status === "fulfilled") setSummary(sum.value);
-          if (recs.status === "fulfilled") setRecords(recs.value);
-        }
-      } catch {
-        // handled
-      } finally {
-        setLoading(false);
-      }
-    }
-    load();
+    api
+      .get<ChildLink[]>("/parent-student/my-children")
+      .then((list) => {
+        setChildren(list);
+        setChildId(list[0]?.student_id ?? null);
+      })
+      .catch(() => setChildren([]));
   }, []);
 
-  const studentName = child?.student?.user
-    ? `${child.student.user.first_name} ${child.student.user.last_name}`
-    : "Хүүхэд";
-
-  if (loading) {
+  if (!children) {
     return (
-      <div className="p-6 space-y-4">
-        <div className="h-32 animate-pulse rounded-xl bg-gray-200" />
-        <div className="h-64 animate-pulse rounded-xl bg-gray-200" />
+      <div className="space-y-4 p-6">
+        <Skeleton className="h-36 w-full rounded-2xl" />
+        <Skeleton className="h-64 w-full rounded-2xl" />
       </div>
     );
   }
 
   return (
-    <div className="p-6 space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-[#1B2B4B]">{studentName} — Ирц</h1>
-        <p className="text-sm text-gray-500 mt-0.5">Сүүлийн 30 хоногийн ирцийн бүртгэл</p>
-      </div>
+    <div className="animate-in-rise space-y-6 p-4 sm:p-6">
+      <PageHeader icon={CheckSquare} title="Ирц" description="Хичээл бүрийн ирц, ирэх хичээлүүд" />
 
-      {/* Summary */}
-      {summary ? (
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-          {[
-            { label: "Ирцийн хувь", value: `${summary.attendance_rate}%`, color: "text-[#1B2B4B] bg-[#1B2B4B]/5" },
-            { label: "Ирсэн", value: summary.present, color: "text-green-600 bg-green-50" },
-            { label: "Тасалсан", value: summary.absent, color: "text-red-600 bg-red-50" },
-            { label: "Хоцорсон", value: summary.late, color: "text-orange-600 bg-orange-50" },
-          ].map((item) => (
-            <Card key={item.label}>
-              <CardContent className={`pt-5 pb-5 text-center rounded-xl ${item.color.split(" ")[1]}`}>
-                <p className={`text-3xl font-bold ${item.color.split(" ")[0]}`}>{item.value}</p>
-                <p className="text-xs text-gray-500 mt-1">{item.label}</p>
-              </CardContent>
-            </Card>
-          ))}
+      {children.length === 0 ? (
+        <div className="rounded-2xl border bg-card">
+          <EmptyState
+            icon={CheckSquare}
+            title="Холбогдсон хүүхэд алга"
+            description="Төвийн админ таныг хүүхэдтэй тань холбосны дараа ирц энд харагдана."
+          />
         </div>
       ) : (
-        <Card className="border-dashed">
-          <CardContent className="flex items-center justify-center py-8">
-            <p className="text-sm text-gray-400">Ирцийн мэдээлэл байхгүй байна</p>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Attendance records */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base text-[#1B2B4B]">Ирцийн бүртгэл</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {records.length === 0 ? (
-            <p className="text-sm text-gray-400 text-center py-6">Бүртгэл байхгүй</p>
-          ) : (
-            <div className="space-y-2">
-              {records.map((r) => (
-                <div
-                  key={r.id}
-                  className="flex items-center justify-between py-2.5 border-b last:border-0"
+        <>
+          {children.length > 1 && (
+            <div className="flex flex-wrap gap-1.5">
+              {children.map((c) => (
+                <button
+                  key={c.student_id}
+                  type="button"
+                  aria-pressed={c.student_id === childId}
+                  onClick={() => setChildId(c.student_id)}
+                  className={cn(
+                    "rounded-lg px-3 py-1.5 text-sm font-medium transition-colors",
+                    c.student_id === childId
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted text-muted-foreground hover:bg-accent",
+                  )}
                 >
-                  <div>
-                    <p className="text-sm font-medium text-[#1B2B4B]">
-                      {new Date(r.date).toLocaleDateString("mn-MN", {
-                        month: "long",
-                        day: "numeric",
-                        weekday: "short",
-                      })}
-                    </p>
-                    {r.subject && (
-                      <p className="text-xs text-gray-500">{r.subject}{r.period ? ` · ${r.period}-р цаг` : ""}</p>
-                    )}
-                    {r.note && <p className="text-xs text-gray-400 mt-0.5">{r.note}</p>}
-                  </div>
-                  <Badge
-                    className={`${STATUS_COLOR[r.status] ?? "bg-gray-100 text-gray-600"} text-xs`}
-                    variant="secondary"
-                  >
-                    {STATUS_LABEL[r.status] ?? r.status}
-                  </Badge>
-                </div>
+                  {childName(c)}
+                </button>
               ))}
             </div>
           )}
-        </CardContent>
-      </Card>
+          {childId && <ChildAttendance key={childId} studentId={childId} />}
+        </>
+      )}
+    </div>
+  );
+}
+
+function ChildAttendance({ studentId }: { studentId: number }) {
+  const [summary, setSummary] = useState<StudentAttendanceSummary | null>(null);
+  const [records, setRecords] = useState<AttendanceRecord[] | null>(null);
+  const [classIds, setClassIds] = useState<Set<number>>(new Set());
+
+  useEffect(() => {
+    attendanceApi
+      .studentSummary(studentId)
+      .then(setSummary)
+      .catch(() => setSummary(null));
+    attendanceApi
+      .byStudent(studentId)
+      .then(setRecords)
+      .catch(() => setRecords([]));
+    enrollmentsApi
+      .forStudent(studentId)
+      .then((list) =>
+        setClassIds(
+          new Set(
+            list.filter((e) => e.status === "active" || e.status === "paused").map((e) => e.class_id),
+          ),
+        ),
+      )
+      .catch(() => setClassIds(new Set()));
+  }, [studentId]);
+
+  const counts: Array<{ status: AttendanceStatus; value: number }> = summary
+    ? [
+        { status: "present", value: summary.present },
+        { status: "absent", value: summary.absent },
+        { status: "late", value: summary.late },
+        { status: "excused", value: summary.excused },
+      ]
+    : [];
+
+  return (
+    <div className="space-y-6">
+      <section className="rounded-2xl border bg-card p-5 shadow-sm">
+        {!summary ? (
+          <Skeleton className="h-24 w-full rounded-xl" />
+        ) : summary.total === 0 ? (
+          <p className="py-4 text-center text-sm text-muted-foreground">
+            Ирц хараахан бүртгэгдээгүй байна
+          </p>
+        ) : (
+          <>
+            <p className="text-xs font-medium text-muted-foreground">Ирсэн хувь (хоцорсныг оруулав)</p>
+            <p className="mt-1 text-4xl font-bold tracking-tight text-foreground">
+              {summary.attendance_rate ?? "—"}%
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {counts.map((c) => (
+                <span key={c.status} className="inline-flex items-center gap-1.5 text-sm">
+                  <AttendancePill status={c.status} />
+                  <span className="font-semibold tabular-nums text-foreground">{c.value}</span>
+                </span>
+              ))}
+            </div>
+            {summary.by_class.length > 1 && (
+              <ul className="mt-4 divide-y border-t">
+                {summary.by_class.map((c) => (
+                  <li key={c.class_id} className="flex items-center justify-between gap-3 py-2 text-sm">
+                    <span className="truncate text-foreground">{c.class_name}</span>
+                    <span className="shrink-0 tabular-nums text-muted-foreground">
+                      {c.attendance_rate ?? "—"}% · {c.absent} ирээгүй
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </>
+        )}
+      </section>
+
+      <section>
+        <h2 className="mb-3 text-base font-semibold text-foreground">Хичээлийн хуваарь</h2>
+        <WeekSchedule
+          showTeacher
+          filter={(s) => classIds.has(s.class_id)}
+          emptyText="Энэ долоо хоногт хичээл алга"
+        />
+      </section>
+
+      <section>
+        <h2 className="mb-3 text-base font-semibold text-foreground">Ирцийн түүх</h2>
+        {!records ? (
+          <Skeleton className="h-40 w-full rounded-2xl" />
+        ) : records.length === 0 ? (
+          <p className="rounded-2xl border border-dashed py-8 text-center text-sm text-muted-foreground">
+            Бүртгэл алга
+          </p>
+        ) : (
+          <ul className="divide-y rounded-2xl border bg-card">
+            {records.slice(0, 60).map((r) => {
+              const date = (r.session?.date ?? r.date).slice(0, 10);
+              return (
+                <li key={r.id} className="flex items-center justify-between gap-3 p-3">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-foreground">
+                      {formatDate(date)} · {WEEKDAY_SHORT[isoWeekdayOf(date)]}
+                      {r.session && (
+                        <span className="ml-2 font-normal tabular-nums text-muted-foreground">
+                          {formatTimeRange(r.session.start_time, r.session.end_time)}
+                        </span>
+                      )}
+                    </p>
+                    <p className="truncate text-xs text-muted-foreground">
+                      {[r.class?.name, r.session?.topic, r.note].filter(Boolean).join(" · ")}
+                    </p>
+                  </div>
+                  <AttendancePill status={r.status} />
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </section>
     </div>
   );
 }

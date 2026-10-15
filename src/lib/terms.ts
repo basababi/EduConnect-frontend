@@ -70,6 +70,29 @@ export const INVOICE_STATUS_LABELS = {
   void: "Хүчингүй",
 } as const;
 
+export const SESSION_STATUS_LABELS = {
+  scheduled: "Товлогдсон",
+  held: "Орсон",
+  cancelled: "Цуцлагдсан",
+} as const;
+
+export const SESSION_KIND_LABELS = {
+  regular: "Хуваарийн",
+  makeup: "Нөхөх хичээл",
+  extra: "Нэмэлт хичээл",
+} as const;
+
+export const ATTENDANCE_STATUS_LABELS = {
+  present: "Ирсэн",
+  absent: "Ирээгүй",
+  late: "Хоцорсон",
+  excused: "Чөлөөтэй",
+} as const;
+
+/** 1 = Даваа … 7 = Ням */
+export const WEEKDAY_LABELS = ["", "Даваа", "Мягмар", "Лхагва", "Пүрэв", "Баасан", "Бямба", "Ням"];
+export const WEEKDAY_SHORT = ["", "Да", "Мя", "Лх", "Пү", "Ба", "Бя", "Ня"];
+
 export const PAYMENT_METHOD_LABELS = {
   cash: "Бэлэн",
   transfer: "Шилжүүлэг",

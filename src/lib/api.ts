@@ -586,6 +586,15 @@ export interface AttendanceRecord {
   class_id: number;
   date: string;
   status: "present" | "absent" | "late" | "excused";
+  /** Хичээлийн ирц (Фаза 4) — хуучин өдрийн ирцэд null */
+  session?: {
+    id: number;
+    date: string;
+    start_time: string;
+    end_time: string;
+    topic: string | null;
+  } | null;
+  class?: { id: number; name: string } | null;
   subject: string | null;
   period: number | null;
   note: string | null;
@@ -775,16 +784,92 @@ export interface School {
   created_at: string;
 }
 
+/** Бүлгийн долоо хоногийн хуваарийн мөр (гараг + цаг). Үүнээс хичээлүүд автоматаар үүснэ. */
 export interface TimetableSlot {
   id: number;
   class_id: number;
   day_of_week: number; // 1=Даваа .. 7=Ням
-  period: number;
-  subject: string;
+  /** @deprecated ЕБС-ийн "N-р цаг" — шинэ мөрт null */
+  period: number | null;
+  /** @deprecated — шинэ мөрт null */
+  subject: string | null;
+  /** null = бүлгийн багш */
   teacher_id: number | null;
+  /** null = бүлгийн өрөө */
   room: string | null;
   start_time: string | null;
   end_time: string | null;
+  class_name?: string | null;
+}
+
+// ===== Хичээл (session) =====
+export type SessionStatus = "scheduled" | "held" | "cancelled";
+export type SessionKind = "regular" | "makeup" | "extra";
+export type AttendanceStatus = "present" | "absent" | "late" | "excused";
+
+export interface SessionCounts {
+  present: number;
+  absent: number;
+  late: number;
+  excused: number;
+  total: number;
+}
+
+export interface ClassSession {
+  id: number;
+  class_id: number;
+  class: { id: number; name: string; course: { id: number; name: string } | null } | null;
+  /** YYYY-MM-DD */
+  date: string;
+  /** 1 = Даваа … 7 = Ням */
+  weekday: number;
+  start_time: string;
+  end_time: string;
+  room: string | null;
+  status: SessionStatus;
+  kind: SessionKind;
+  topic: string | null;
+  teacher: { id: number; first_name: string; last_name: string } | null;
+  cancel_reason: string | null;
+  makeup_for_id: number | null;
+  attendance_taken_at: string | null;
+  /** Зөвхөн админ, багшид */
+  attendance?: SessionCounts;
+}
+
+export interface SessionRosterEntry {
+  student_id: number;
+  name: string;
+  student_code: string | null;
+  attendance: { status: AttendanceStatus; note: string | null } | null;
+}
+
+export interface SessionDetail extends ClassSession {
+  roster: SessionRosterEntry[];
+}
+
+export interface StudentAttendanceSummary {
+  student_id: number;
+  from: string | null;
+  to: string | null;
+  total: number;
+  present: number;
+  absent: number;
+  late: number;
+  excused: number;
+  /** (ирсэн + хоцорсон) / нийт · бүртгэлгүй бол null */
+  attendance_rate: number | null;
+  by_class: Array<{
+    class_id: number;
+    class_name: string;
+    last_date: string | null;
+    total: number;
+    present: number;
+    absent: number;
+    late: number;
+    excused: number;
+    attendance_rate: number | null;
+  }>;
 }
 
 export interface CalendarEventItem {
@@ -983,14 +1068,14 @@ export interface CreateStudentDto {
   create_invoice?: boolean;
 }
 export interface UpsertSlotDto {
+  /** өгвөл тэр мөрийг засна */
+  id?: number;
   class_id: number;
   day_of_week: number;
-  period: number;
-  subject: string;
-  teacher_id?: number;
+  start_time: string;
+  end_time: string;
   room?: string;
-  start_time?: string;
-  end_time?: string;
+  teacher_id?: number;
 }
 export interface CreateEventDto {
   title: string;
@@ -1281,6 +1366,44 @@ export const financeApi = {
     api.get<RevenueReport>(`/finance/revenue${toQuery({ from, to })}`),
 };
 
+export const sessionsApi = {
+  /** Админ — бүгд, багш — өөрийн, сурагч/эцэг эх — өөрийн бүлгүүдийн хичээл */
+  list: (params: { from?: string; to?: string; class_id?: number } = {}) =>
+    api.get<ClassSession[]>(`/sessions${toQuery(params)}`),
+  get: (id: number) => api.get<SessionDetail>(`/sessions/${id}`),
+  /** Зөвхөн ирээгүй / хоцорсон / чөлөөтэйг илгээхэд хангалттай — бусад нь ирсэн */
+  markAttendance: (
+    id: number,
+    dto: {
+      marks: Array<{ student_id: number; status: AttendanceStatus; note?: string }>;
+      topic?: string;
+    },
+  ) => api.post<SessionDetail>(`/sessions/${id}/attendance`, dto),
+  cancel: (id: number, reason: string) =>
+    api.post<SessionDetail>(`/sessions/${id}/cancel`, { reason }),
+  restore: (id: number) => api.post<SessionDetail>(`/sessions/${id}/restore`),
+  reschedule: (
+    id: number,
+    dto: { date: string; start_time: string; end_time: string; room?: string; reason?: string },
+  ) => api.post<SessionDetail>(`/sessions/${id}/reschedule`, dto),
+  update: (id: number, dto: { topic?: string; room?: string; teacher_id?: number }) =>
+    api.patch<SessionDetail>(`/sessions/${id}`, dto),
+  /** Нөхөх (makeup_for_id-тай) эсвэл нэмэлт хичээл */
+  create: (dto: {
+    class_id: number;
+    date: string;
+    start_time: string;
+    end_time: string;
+    room?: string;
+    teacher_id?: number;
+    topic?: string;
+    makeup_for_id?: number;
+  }) => api.post<SessionDetail>("/sessions", dto),
+  remove: (id: number) => api.delete<{ id: number; deleted: boolean }>(`/sessions/${id}`),
+  sync: (classId: number) =>
+    api.post<{ created: number; removed: number }>(`/sessions/sync/${classId}`),
+};
+
 export const analyticsApi = {
   classPerformance: (classId: number) =>
     api.get<ClassPerformance>(`/analytics/class/${classId}/performance`),
@@ -1294,9 +1417,16 @@ export const calendarApi = {
   classTimetable: (classId: number) =>
     api.get<TimetableSlot[]>(`/calendar/timetable/class/${classId}`),
   myTimetable: () => api.get<TimetableSlot[]>("/calendar/timetable/mine"),
+  /** Хадгалсны дараа бүлгийн ирэх хичээлүүд автоматаар тохирно (`sessions` — үр дүн) */
   upsertSlot: (dto: UpsertSlotDto) =>
-    api.post<TimetableSlot>("/calendar/timetable", dto),
-  deleteSlot: (id: number) => api.delete<void>(`/calendar/timetable/${id}`),
+    api.post<TimetableSlot & { sessions: { created: number; removed: number } }>(
+      "/calendar/timetable",
+      dto,
+    ),
+  deleteSlot: (id: number) =>
+    api.delete<{ id: number; deleted: boolean; sessions_removed: number }>(
+      `/calendar/timetable/${id}`,
+    ),
   events: () => api.get<CalendarEventItem[]>("/calendar/events"),
   createEvent: (dto: CreateEventDto) =>
     api.post<CalendarEventItem>("/calendar/events", dto),
@@ -1421,6 +1551,16 @@ export const attendanceApi = {
   },
   byStudent: (studentId: number) =>
     api.get<AttendanceRecord[]>(`/attendance/student/${studentId}`),
+  /** Сурагчийн ирсэн хувь, бүлэг тус бүрээр (эцэг эх, сурагч, багш, админ) */
+  studentSummary: (studentId: number, from?: string, to?: string) => {
+    const q = new URLSearchParams();
+    if (from) q.set("from", from);
+    if (to) q.set("to", to);
+    const qs = q.toString();
+    return api.get<StudentAttendanceSummary>(
+      `/attendance/student/${studentId}/summary${qs ? `?${qs}` : ""}`,
+    );
+  },
   markClass: (dto: {
     class_id: number;
     date: string;
