@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -21,9 +22,14 @@ import {
   BookOpen,
   Users,
   CheckCircle2,
+  Phone,
+  UserRound,
 } from "lucide-react";
 import { toast } from "sonner";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { authApi, setAuth, GOOGLE_AUTH_URL, type User } from "@/lib/api";
+import { looksLikePhone } from "@/lib/phone";
+import { PhoneCodeForm } from "@/components/landing/phone-code-form";
 
 interface LoginPageProps {
   onBack: () => void;
@@ -79,6 +85,7 @@ const LEFT_PANEL_FEATURES = [
 const DEMO_ENABLED = process.env.NEXT_PUBLIC_ENABLE_DEMO === "true";
 
 export function LoginPage({ onBack, onSuccess, onRegister }: LoginPageProps) {
+  /** Имэйл эсвэл утасны дугаар */
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -89,15 +96,19 @@ export function LoginPage({ onBack, onSuccess, onRegister }: LoginPageProps) {
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await authApi.login(email, password);
-      setAuth(res.accessToken, res.refreshToken, res.user);
-      toast.success(`Тавтай морил, ${res.user.first_name}!`);
-      onSuccess(res.user);
+      await loginWith(email.trim(), password);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Нэвтэрч чадсангүй");
     } finally {
       setLoading(false);
     }
+  }
+
+  async function loginWith(identifier: string, pass: string) {
+    const res = await authApi.login(identifier, pass);
+    setAuth(res.accessToken, res.refreshToken, res.user);
+    toast.success(`Тавтай морил, ${res.user.first_name}!`);
+    onSuccess(res.user);
   }
 
   function selectDemo(acc: (typeof DEMO_ACCOUNTS)[0]) {
@@ -174,7 +185,7 @@ export function LoginPage({ onBack, onSuccess, onRegister }: LoginPageProps) {
           <div>
             <h2 className="text-3xl font-bold text-primary">Тавтай морил</h2>
             <p className="mt-2 text-muted-foreground">
-              Нэвтрэхийн тулд имэйл болон нууц үгээ оруулна уу
+              Утасны дугаар эсвэл имэйл, нууц үгээ оруулна уу
             </p>
           </div>
 
@@ -226,15 +237,25 @@ export function LoginPage({ onBack, onSuccess, onRegister }: LoginPageProps) {
           {/* Login form */}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email">Имэйл хаяг</Label>
+              <Label htmlFor="email">Утас эсвэл имэйл</Label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                {looksLikePhone(email) ? (
+                  <Phone className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                ) : email.includes("@") ? (
+                  <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                ) : (
+                  <UserRound className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                )}
                 <Input
                   id="email"
-                  type="email"
+                  type="text"
+                  inputMode={looksLikePhone(email) ? "tel" : "email"}
+                  autoComplete="username"
+                  autoCapitalize="none"
+                  spellCheck={false}
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="name@example.mn"
+                  placeholder="9911 2233 эсвэл name@example.mn"
                   required
                   disabled={loading}
                   className="pl-10"
@@ -309,6 +330,15 @@ export function LoginPage({ onBack, onSuccess, onRegister }: LoginPageProps) {
             Google-ээр нэвтрэх
           </Button>
 
+          {/* Утсаар анх удаа — төвөөс нээсэн эрхийг идэвхжүүлэх */}
+          <Link
+            href="/activate"
+            className="flex items-center justify-center gap-2 rounded-lg border border-dashed p-3 text-sm text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground"
+          >
+            <Phone className="h-4 w-4" />
+            Анх удаа утсаар нэвтрэх үү? <span className="font-medium text-amber">Бүртгэл идэвхжүүлэх</span>
+          </Link>
+
           {/* Footer note */}
           <p className="text-center text-xs text-muted-foreground">
             Төвөө бүртгүүлэхийг хүсвэл{" "}
@@ -321,7 +351,15 @@ export function LoginPage({ onBack, onSuccess, onRegister }: LoginPageProps) {
             </button>
           </p>
 
-          <ForgotDialog open={forgotOpen} onOpenChange={setForgotOpen} />
+          <ForgotDialog
+            open={forgotOpen}
+            onOpenChange={setForgotOpen}
+            initial={email}
+            onPhoneReset={async (phone, pass) => {
+              setForgotOpen(false);
+              await loginWith(phone, pass);
+            }}
+          />
         </div>
       </div>
     </div>
@@ -331,14 +369,20 @@ export function LoginPage({ onBack, onSuccess, onRegister }: LoginPageProps) {
 function ForgotDialog({
   open,
   onOpenChange,
+  initial,
+  onPhoneReset,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
+  /** Нэвтрэх талбарт бичсэн утга — утас мэт бол утасны таб, имэйл бол имэйлийн таб */
+  initial: string;
+  onPhoneReset: (phone: string, password: string) => Promise<void>;
 }) {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
   const [devUrl, setDevUrl] = useState<string | null>(null);
+  const [tab, setTab] = useState<"phone" | "email">("phone");
 
   function reset() {
     setEmail("");
@@ -365,70 +409,94 @@ function ForgotDialog({
       open={open}
       onOpenChange={(v) => {
         onOpenChange(v);
-        if (!v) reset();
+        if (v) {
+          const isEmail = initial.includes("@");
+          setTab(isEmail ? "email" : "phone");
+          setEmail(isEmail ? initial.trim() : "");
+        } else reset();
       }}
     >
-      <DialogContent className="sm:max-w-sm">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Нууц үг сэргээх</DialogTitle>
           <DialogDescription>
-            Бүртгэлтэй имэйлээ оруулна уу — сэргээх холбоос илгээнэ.
+            Утсаар бол SMS код, имэйлээр бол сэргээх холбоос илгээнэ.
           </DialogDescription>
         </DialogHeader>
-        {sent ? (
-          <div className="space-y-4">
-            <div className="flex items-start gap-3 rounded-lg border border-green-200 bg-green-50 p-3">
-              <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-green-600" />
-              <p className="text-sm text-green-800">
-                Хэрэв энэ имэйл бүртгэлтэй бол сэргээх холбоос илгээгдсэн.
-              </p>
-            </div>
-            {devUrl && (
-              <div className="space-y-1.5">
-                <p className="text-xs text-muted-foreground">
-                  Имэйл тохиргоогүй тул (dev) шууд холбоос:
-                </p>
-                <a
-                  href={devUrl}
-                  className="block truncate rounded-lg border bg-muted/40 p-2 text-xs text-amber hover:underline"
-                >
-                  {devUrl}
-                </a>
+        <Tabs value={tab} onValueChange={(v) => setTab(v as "phone" | "email")}>
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="phone" className="gap-1.5">
+              <Phone className="h-3.5 w-3.5" /> Утсаар
+            </TabsTrigger>
+            <TabsTrigger value="email" className="gap-1.5">
+              <Mail className="h-3.5 w-3.5" /> Имэйлээр
+            </TabsTrigger>
+          </TabsList>
+          <TabsContent value="phone" className="pt-3">
+            <PhoneCodeForm
+              key={open ? "open" : "closed"}
+              purpose="reset"
+              initialPhone={looksLikePhone(initial) ? initial.trim() : ""}
+              onDone={onPhoneReset}
+            />
+          </TabsContent>
+          <TabsContent value="email" className="pt-3">
+            {sent ? (
+              <div className="space-y-4">
+                <div className="flex items-start gap-3 rounded-lg border border-green-200 bg-green-50 p-3">
+                  <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-green-600" />
+                  <p className="text-sm text-green-800">
+                    Хэрэв энэ имэйл бүртгэлтэй бол сэргээх холбоос илгээгдсэн.
+                  </p>
+                </div>
+                {devUrl && (
+                  <div className="space-y-1.5">
+                    <p className="text-xs text-muted-foreground">
+                      Имэйл тохиргоогүй тул (dev) шууд холбоос:
+                    </p>
+                    <a
+                      href={devUrl}
+                      className="block truncate rounded-lg border bg-muted/40 p-2 text-xs text-amber hover:underline"
+                    >
+                      {devUrl}
+                    </a>
+                  </div>
+                )}
+                <Button className="w-full" onClick={() => onOpenChange(false)}>
+                  Хаах
+                </Button>
               </div>
+            ) : (
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="forgot-email">Имэйл хаяг</Label>
+                  <Input
+                    id="forgot-email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="name@example.mn"
+                    required
+                    disabled={loading}
+                  />
+                </div>
+                <DialogFooter>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => onOpenChange(false)}
+                    disabled={loading}
+                  >
+                    Болих
+                  </Button>
+                  <Button type="submit" disabled={loading}>
+                    {loading ? "Илгээж байна..." : "Холбоос илгээх"}
+                  </Button>
+                </DialogFooter>
+              </form>
             )}
-            <Button className="w-full" onClick={() => onOpenChange(false)}>
-              Хаах
-            </Button>
-          </div>
-        ) : (
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="forgot-email">Имэйл хаяг</Label>
-              <Input
-                id="forgot-email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="name@example.mn"
-                required
-                disabled={loading}
-              />
-            </div>
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => onOpenChange(false)}
-                disabled={loading}
-              >
-                Болих
-              </Button>
-              <Button type="submit" disabled={loading}>
-                {loading ? "Илгээж байна..." : "Холбоос илгээх"}
-              </Button>
-            </DialogFooter>
-          </form>
-        )}
+          </TabsContent>
+        </Tabs>
       </DialogContent>
     </Dialog>
   );

@@ -37,7 +37,7 @@ export function TeacherSettings() {
             </div>
             <div>
               <Label>Имэйл</Label>
-              <Input defaultValue={user.email} className="mt-1" disabled />
+              <Input defaultValue={user.email ?? ""} className="mt-1" disabled />
             </div>
             <div>
               <Label>Утас</Label>

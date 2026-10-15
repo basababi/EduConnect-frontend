@@ -215,6 +215,7 @@ export default function Home() {
           {studentView === "payments" && <MyPaymentsView />}
           {studentView === "announcements" && <AnnouncementsView />}
           {studentView === "messages" && <StudentMessages />}
+          {studentView === "settings" && <AccountSettings />}
         </StudentShell>
       );
     }
@@ -236,6 +237,7 @@ export default function Home() {
           {parentView === "messages" && <ParentMessages />}
           {parentView === "payments" && <MyPaymentsView />}
           {parentView === "announcements" && <AnnouncementsView />}
+          {parentView === "settings" && <AccountSettings />}
         </ParentShell>
       );
     }

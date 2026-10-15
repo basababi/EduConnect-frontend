@@ -12,7 +12,8 @@ export type FeatureKey =
   | "career"
   | "public_exams"
   | "subjects"
-  | "academic_terms";
+  | "academic_terms"
+  | "sms_notifications";
 
 export type FeatureFlags = Partial<Record<FeatureKey, boolean>>;
 
@@ -40,6 +41,10 @@ export const FEATURE_INFO: Record<FeatureKey, { label: string; description: stri
   academic_terms: {
     label: "Улирал, хичээлийн жил",
     description: "Улирал, жил дэвших, дүнгийн хуудас (ЕБС загвар)",
+  },
+  sms_notifications: {
+    label: "Мэдэгдлийн SMS",
+    description: "Төлбөрийн сануулга, тасалсан тухай SMS (зардалтай, сарын хязгаартай)",
   },
 };
 

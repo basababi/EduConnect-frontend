@@ -38,6 +38,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { invitationsApi, usersApi, type User, type Invitation } from "@/lib/api";
+import { formatPhone } from "@/lib/phone";
 import { ROLE_LABELS, roleLabel } from "@/lib/terms";
 
 const ROLE_COLOR: Record<string, string> = {
@@ -90,7 +91,7 @@ export function AdminUsers({ currentUser }: { currentUser: User }) {
   const filtered = users.filter((u) => {
     const matchSearch =
       search === "" ||
-      `${u.first_name} ${u.last_name} ${u.email}`
+      `${u.first_name} ${u.last_name} ${u.email ?? ""} ${u.phone ?? ""} ${formatPhone(u.phone)}`
         .toLowerCase()
         .includes(search.toLowerCase());
     const matchRole = roleFilter === "all" || u.role === roleFilter;
@@ -195,7 +196,7 @@ export function AdminUsers({ currentUser }: { currentUser: User }) {
                             )}
                           </p>
                           <p className="truncate text-xs text-muted-foreground">
-                            {u.email}
+                            {u.email ?? formatPhone(u.phone)}
                             {currentUser.role === "super_admin" && u.school && (
                               <span className="ml-1.5 text-muted-foreground/70">
                                 · {u.school.name}
@@ -363,7 +364,7 @@ export function AdminUsers({ currentUser }: { currentUser: User }) {
   async function handleDelete(u: User) {
     if (
       !confirm(
-        `${u.first_name} ${u.last_name} (${u.email})-г устгах уу?\nХэрэглэгч идэвхгүй болж, нэвтрэх боломжгүй болно. Дараа нь сэргээж болно.`,
+        `${u.first_name} ${u.last_name} (${u.email ?? formatPhone(u.phone)})-г устгах уу?\nХэрэглэгч идэвхгүй болж, нэвтрэх боломжгүй болно. Дараа нь сэргээж болно.`,
       )
     )
       return;

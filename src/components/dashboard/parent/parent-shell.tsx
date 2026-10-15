@@ -1,6 +1,14 @@
 "use client";
 
-import { Home, CheckSquare, BarChart3, MessageSquare, Megaphone, Wallet } from "lucide-react";
+import {
+  Home,
+  CheckSquare,
+  BarChart3,
+  MessageSquare,
+  Megaphone,
+  Wallet,
+  Settings,
+} from "lucide-react";
 import { type User } from "@/lib/api";
 import {
   DashboardShell, type ShellNavSection,
@@ -12,7 +20,8 @@ export type ParentView =
   | "grades"
   | "messages"
   | "payments"
-  | "announcements";
+  | "announcements"
+  | "settings";
 
 const SECTIONS: ShellNavSection[] = [
   {
@@ -23,6 +32,7 @@ const SECTIONS: ShellNavSection[] = [
       { id: "messages", label: "Мессеж", icon: MessageSquare, primary: true },
       { id: "payments", label: "Төлбөр", icon: Wallet },
       { id: "announcements", label: "Зарлал", icon: Megaphone },
+      { id: "settings", label: "Тохиргоо", icon: Settings },
     ],
   },
 ];

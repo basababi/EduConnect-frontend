@@ -20,6 +20,7 @@ import {
   Pencil,
   Phone,
   Search,
+  Smartphone,
   Trash2,
   UserPlus,
   UserRoundPlus,
@@ -36,6 +37,8 @@ import {
   StudentFormDialog,
   enrollableGroups,
 } from "@/components/dashboard/admin/student-dialogs";
+import { StudentAccessDialog } from "@/components/dashboard/admin/student-access-dialog";
+import { formatPhone } from "@/lib/phone";
 import {
   classesApi,
   studentsApi,
@@ -65,6 +68,7 @@ export function AdminStudents() {
   const [enrolling, setEnrolling] = useState<Student | null>(null);
   const [billingOf, setBillingOf] = useState<FixedStudent | null>(null);
   const [importOpen, setImportOpen] = useState(false);
+  const [accessOf, setAccessOf] = useState<FixedStudent | null>(null);
 
   const load = useCallback(() => {
     Promise.all([
@@ -89,7 +93,7 @@ export function AdminStudents() {
       (filter === "enrolled" ? s.groups.length > 0 : s.groups.length === 0);
     const matchSearch =
       !q ||
-      `${studentDisplayName(s)} ${s.student_code ?? ""} ${s.phone ?? ""} ${s.guardian_phone ?? ""}`
+      `${studentDisplayName(s)} ${s.student_code ?? ""} ${s.phone ?? ""} ${s.guardian_phone ?? ""} ${formatPhone(s.phone)} ${formatPhone(s.guardian_phone)}`
         .toLowerCase()
         .includes(q);
     return matchFilter && matchSearch;
@@ -202,8 +206,17 @@ export function AdminStudents() {
                           <span className="inline-flex items-center gap-1">
                             <Phone className="h-3 w-3" />
                             {s.guardian_phone
-                              ? `${s.guardian_phone}${s.guardian_name ? ` (${s.guardian_name})` : ""}`
-                              : s.phone}
+                              ? `${formatPhone(s.guardian_phone)}${s.guardian_name ? ` (${s.guardian_name})` : ""}`
+                              : formatPhone(s.phone)}
+                          </span>
+                        )}
+                        {s.user && (
+                          <span
+                            className="inline-flex items-center gap-1"
+                            title={s.user.status === "invited" ? "Нэвтрэх эрх нээсэн, идэвхжүүлээгүй" : "Апп ашигладаг"}
+                          >
+                            <Smartphone className="h-3 w-3" />
+                            {s.user.status === "invited" ? "Идэвхжүүлээгүй" : "Апп"}
                           </span>
                         )}
                       </p>
@@ -242,6 +255,9 @@ export function AdminStudents() {
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => setBillingOf({ id: s.id, name })}>
                           <Wallet className="mr-2 h-4 w-4" /> Төлбөр, нэхэмжлэх
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setAccessOf({ id: s.id, name })}>
+                          <Smartphone className="mr-2 h-4 w-4" /> Апп-д нэвтрэх эрх
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           onClick={() => {
@@ -290,6 +306,12 @@ export function AdminStudents() {
       <StudentInvoicesDialog
         student={billingOf}
         onOpenChange={(v) => !v && setBillingOf(null)}
+      />
+      <StudentAccessDialog
+        key={`access-${accessOf?.id ?? "none"}`}
+        student={accessOf}
+        onOpenChange={(v) => !v && setAccessOf(null)}
+        onChanged={load}
       />
     </div>
   );

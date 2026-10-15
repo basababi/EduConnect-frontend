@@ -17,6 +17,9 @@ import {
   CalendarRange,
   CheckCircle2,
   Plus,
+  Phone,
+  KeyRound,
+  Lock,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -43,6 +46,8 @@ import {
   type RolloverPreview,
 } from "@/lib/api";
 import { hasFeature } from "@/lib/features";
+import { formatPhone, normalizePhone } from "@/lib/phone";
+import { SmsUsageCard } from "@/components/dashboard/admin/sms-usage-card";
 
 function currentAcademicYear(): number {
   const now = new Date();
@@ -66,6 +71,7 @@ export function AccountSettings() {
       {showTerms && <TermsCard />}
       {showTerms && <RolloverCard />}
       <SecurityCard user={stored} />
+      {stored?.role === "admin" && <SmsUsageCard />}
       <SessionsCard />
     </div>
   );
@@ -310,25 +316,32 @@ function TermsCard() {
   );
 }
 
-function ProfileCard({ user }: { user: User }) {
-  const [firstName, setFirstName] = useState(user.first_name);
-  const [lastName, setLastName] = useState(user.last_name);
-  const [phone, setPhone] = useState(user.phone ?? "");
+/** Токенуудыг хэвээр үлдээж локал хэрэглэгчийг шинэчилнэ */
+function storeUser(user: User) {
+  const at = getToken();
+  const rt = getRefreshToken();
+  if (at && rt) setAuth(at, rt, user);
+}
+
+function ProfileCard({ user: initial }: { user: User }) {
+  const [user, setUser] = useState(initial);
+  const [firstName, setFirstName] = useState(initial.first_name);
+  const [lastName, setLastName] = useState(initial.last_name);
   const [saving, setSaving] = useState(false);
+  const [phoneOpen, setPhoneOpen] = useState(false);
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
     try {
+      // Нэвтрэх нэр (утас, имэйл) энд солигдохгүй — утсыг SMS кодоор баталгаажуулна
       const updated = await usersApi.update(user.id, {
         first_name: firstName.trim(),
         last_name: lastName.trim(),
-        phone: phone.trim() || null,
       });
-      // Локал хадгалсан хэрэглэгчийг шинэчилнэ (токенуудыг хадгална)
-      const at = getToken();
-      const rt = getRefreshToken();
-      if (at && rt) setAuth(at, rt, { ...user, ...updated });
+      const next = { ...user, ...updated };
+      setUser(next);
+      storeUser(next);
       toast.success("Мэдээлэл хадгалагдлаа");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Хадгалж чадсангүй");
@@ -370,17 +383,33 @@ function ProfileCard({ user }: { user: User }) {
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="set-email">Имэйл</Label>
-              <Input id="set-email" value={user.email} disabled />
+              <Input id="set-email" value={user.email ?? "—"} disabled />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="set-phone">Утас</Label>
-              <Input
-                id="set-phone"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="99112233"
-                disabled={saving}
-              />
+              <Label>Утас (нэвтрэх нэр)</Label>
+              <div className="flex items-center gap-2">
+                <div className="flex h-9 min-w-0 flex-1 items-center gap-2 rounded-md border bg-muted/40 px-3 text-sm">
+                  <Phone className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                  <span className="truncate tabular-nums">
+                    {user.phone ? formatPhone(user.phone) : "—"}
+                  </span>
+                  {user.phone && (
+                    <Badge
+                      variant="secondary"
+                      className={
+                        user.phone_verified
+                          ? "ml-auto bg-emerald-100 text-emerald-700"
+                          : "ml-auto bg-amber-100 text-amber-700"
+                      }
+                    >
+                      {user.phone_verified ? "Баталгаажсан" : "Баталгаажаагүй"}
+                    </Badge>
+                  )}
+                </div>
+                <Button type="button" variant="outline" size="sm" onClick={() => setPhoneOpen(true)}>
+                  {!user.phone ? "Нэмэх" : user.phone_verified ? "Солих" : "Баталгаажуулах"}
+                </Button>
+              </div>
             </div>
           </div>
           <div className="flex justify-end">
@@ -391,12 +420,133 @@ function ProfileCard({ user }: { user: User }) {
           </div>
         </form>
       </CardContent>
+      <PhoneChangeDialog
+        key={phoneOpen ? "open" : "closed"}
+        open={phoneOpen}
+        onOpenChange={setPhoneOpen}
+        current={user.phone_verified ? null : (user.phone ?? null)}
+        onChanged={(fresh) => {
+          const next = { ...user, ...fresh };
+          setUser(next);
+          storeUser(next);
+        }}
+      />
     </Card>
+  );
+}
+
+/** Шинэ дугаарт SMS код илгээж баталгаажуулна — дараа нь утсаар нэвтэрч, сэргээж болно */
+function PhoneChangeDialog({
+  open,
+  onOpenChange,
+  current,
+  onChanged,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  /** Баталгаажаагүй одоогийн дугаар (баталгаажуулахад урьдчилан бөглөнө) */
+  current: string | null;
+  onChanged: (user: User) => void;
+}) {
+  const [phone, setPhone] = useState(current ? formatPhone(current) : "");
+  const [code, setCode] = useState("");
+  const [step, setStep] = useState<"phone" | "code">("phone");
+  const [busy, setBusy] = useState(false);
+  const [devCode, setDevCode] = useState<string | null>(null);
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    const normalized = normalizePhone(phone);
+    if (!normalized) {
+      toast.error("Утасны дугаараа 8 оронтойгоор оруулна уу");
+      return;
+    }
+    setBusy(true);
+    try {
+      if (step === "phone") {
+        const res = await authApi.requestPhoneChange(normalized);
+        setDevCode(res.dev_code ?? null);
+        setStep("code");
+        toast.success("Баталгаажуулах код илгээлээ");
+      } else {
+        const fresh = await authApi.confirmPhoneChange(normalized, code.trim());
+        onChanged(fresh);
+        toast.success("Утас баталгаажлаа — одоо утсаараа нэвтэрч болно");
+        onOpenChange(false);
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Амжилтгүй");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-sm">
+        <DialogHeader>
+          <DialogTitle>Утасны дугаар</DialogTitle>
+          <DialogDescription>
+            Дугаартаа ирсэн SMS кодоор баталгаажуулна. Баталгаажсан утсаараа нэвтэрч, нууц үгээ
+            сэргээж болно.
+          </DialogDescription>
+        </DialogHeader>
+        <form onSubmit={submit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="pcd-phone">Утасны дугаар</Label>
+            <Input
+              id="pcd-phone"
+              type="tel"
+              inputMode="tel"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="9911 2233"
+              disabled={busy || step === "code"}
+              required
+            />
+          </div>
+          {step === "code" && (
+            <div className="space-y-2">
+              <Label htmlFor="pcd-code">SMS код</Label>
+              <Input
+                id="pcd-code"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                maxLength={6}
+                value={code}
+                onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
+                placeholder="••••••"
+                className="tracking-[0.4em]"
+                disabled={busy}
+                required
+              />
+              {devCode && (
+                <p className="text-xs text-muted-foreground">
+                  Туршилтын орчин — код: <span className="font-mono font-semibold">{devCode}</span>
+                </p>
+              )}
+            </div>
+          )}
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={busy}>
+              Болих
+            </Button>
+            <Button type="submit" disabled={busy}>
+              {busy ? "Түр хүлээнэ үү..." : step === "phone" ? "Код авах" : "Баталгаажуулах"}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }
 
 function SecurityCard({ user }: { user: User | null }) {
   const [sending, setSending] = useState(false);
+  const [current, setCurrent] = useState("");
+  const [next, setNext] = useState("");
+  const [confirmNext, setConfirmNext] = useState("");
+  const [changing, setChanging] = useState(false);
 
   async function verifyEmail() {
     setSending(true);
@@ -410,6 +560,32 @@ function SecurityCard({ user }: { user: User | null }) {
     }
   }
 
+  async function changePassword(e: React.FormEvent) {
+    e.preventDefault();
+    if (next.length < 8) {
+      toast.error("Шинэ нууц үг хамгийн багадаа 8 тэмдэгт байх ёстой");
+      return;
+    }
+    if (next !== confirmNext) {
+      toast.error("Шинэ нууц үг таарахгүй байна");
+      return;
+    }
+    setChanging(true);
+    try {
+      const res = await authApi.changePassword(current, next);
+      // Бусад төхөөрөмжөөс гарсан; энэ төхөөрөмж шинэ токеноор үргэлжилнэ
+      setAuth(res.accessToken, res.refreshToken, res.user);
+      setCurrent("");
+      setNext("");
+      setConfirmNext("");
+      toast.success("Нууц үг солигдлоо. Бусад төхөөрөмжөөс гарлаа.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Сольж чадсангүй");
+    } finally {
+      setChanging(false);
+    }
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -419,18 +595,72 @@ function SecurityCard({ user }: { user: User | null }) {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
-        <div className="flex items-center justify-between rounded-lg border p-3">
-          <div className="flex items-center gap-3">
-            <MailCheck className="h-5 w-5 text-muted-foreground" />
-            <div>
-              <p className="text-sm font-medium text-foreground">Имэйл баталгаажуулалт</p>
-              <p className="text-xs text-muted-foreground">{user?.email}</p>
+        <form onSubmit={changePassword} className="space-y-3 rounded-lg border p-3">
+          <p className="flex items-center gap-2 text-sm font-medium text-foreground">
+            <KeyRound className="h-4 w-4 text-muted-foreground" />
+            Нууц үг солих
+          </p>
+          <div className="grid gap-3 sm:grid-cols-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="pw-cur" className="text-xs">Одоогийн нууц үг</Label>
+              <Input
+                id="pw-cur"
+                type="password"
+                autoComplete="current-password"
+                value={current}
+                onChange={(e) => setCurrent(e.target.value)}
+                disabled={changing}
+                required
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="pw-new" className="text-xs">Шинэ нууц үг</Label>
+              <Input
+                id="pw-new"
+                type="password"
+                autoComplete="new-password"
+                value={next}
+                onChange={(e) => setNext(e.target.value)}
+                placeholder="8+ тэмдэгт"
+                minLength={8}
+                disabled={changing}
+                required
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="pw-new2" className="text-xs">Давтах</Label>
+              <Input
+                id="pw-new2"
+                type="password"
+                autoComplete="new-password"
+                value={confirmNext}
+                onChange={(e) => setConfirmNext(e.target.value)}
+                disabled={changing}
+                required
+              />
             </div>
           </div>
-          <Button variant="outline" size="sm" onClick={verifyEmail} disabled={sending}>
-            {sending ? "Илгээж байна..." : "Баталгаажуулах"}
-          </Button>
-        </div>
+          <div className="flex justify-end">
+            <Button type="submit" variant="outline" size="sm" className="gap-1.5" disabled={changing}>
+              <Lock className="h-3.5 w-3.5" />
+              {changing ? "Сольж байна..." : "Нууц үг солих"}
+            </Button>
+          </div>
+        </form>
+        {user?.email && (
+          <div className="flex items-center justify-between rounded-lg border p-3">
+            <div className="flex min-w-0 items-center gap-3">
+              <MailCheck className="h-5 w-5 shrink-0 text-muted-foreground" />
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-foreground">Имэйл баталгаажуулалт</p>
+                <p className="truncate text-xs text-muted-foreground">{user.email}</p>
+              </div>
+            </div>
+            <Button variant="outline" size="sm" onClick={verifyEmail} disabled={sending}>
+              {sending ? "Илгээж байна..." : "Баталгаажуулах"}
+            </Button>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

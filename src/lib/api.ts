@@ -44,6 +44,18 @@ export function updateStoredUser(user: User) {
 }
 
 // ===== HTTP client =====
+/** HTTP алдаа: `status`, серверийн хариу (`body`) — жишээ нь 429-ийн `retry_after` */
+export class ApiError extends Error {
+  constructor(
+    message: string,
+    public readonly status: number,
+    public readonly body?: unknown,
+  ) {
+    super(message);
+    this.name = "ApiError";
+  }
+}
+
 async function request<T>(
   path: string,
   options: RequestInit = {},
@@ -79,11 +91,14 @@ async function request<T>(
 
   if (!res.ok) {
     let message = `Алдаа (${res.status})`;
+    let body: unknown;
     try {
-      const body = await res.json();
-      message = body.message || body.error || message;
+      body = await res.json();
+      const b = body as { message?: string | string[]; error?: string };
+      const m = Array.isArray(b.message) ? b.message.join(", ") : b.message;
+      message = m || b.error || message;
     } catch {}
-    throw new Error(message);
+    throw new ApiError(message, res.status, body);
   }
 
   if (res.status === 204) return undefined as T;
@@ -196,9 +211,12 @@ export interface SessionInfo {
   current?: boolean;
 }
 
+export type PhoneCodePurpose = "activate" | "reset";
+
 export const authApi = {
-  login: (email: string, password: string) =>
-    api.post<LoginResponse>("/auth/login", { email, password }),
+  /** `identifier` — имэйл эсвэл утасны дугаар */
+  login: (identifier: string, password: string) =>
+    api.post<LoginResponse>("/auth/login", { identifier, password }),
   me: () => api.get<User>("/auth/me"),
   logout: async () => {
     const refresh = getRefreshToken();
@@ -220,6 +238,25 @@ export const authApi = {
     ),
   resetPassword: (token: string, password: string) =>
     api.post<{ message: string }>("/auth/password/reset", { token, password }),
+  /** Бүртгэл идэвхжүүлэх / нууц үг сэргээх SMS код (дугаар бүртгэлтэй эсэхээс үл хамаарч ижил хариу) */
+  sendPhoneCode: (phone: string, purpose: PhoneCodePurpose) =>
+    api.post<{ message: string; dev_code?: string }>("/auth/phone/send-code", {
+      phone,
+      purpose,
+    }),
+  /** Код + шинэ нууц үг */
+  confirmPhoneCode: (phone: string, purpose: PhoneCodePurpose, code: string, password: string) =>
+    api.post<{ message: string }>("/auth/phone/confirm", { phone, purpose, code, password }),
+  /** Нэвтэрсэн хэрэглэгч утсаа нэмэх/солих */
+  requestPhoneChange: (phone: string) =>
+    api.post<{ message: string; dev_code?: string }>("/auth/phone/change/send-code", { phone }),
+  confirmPhoneChange: (phone: string, code: string) =>
+    api.post<User>("/auth/phone/change/confirm", { phone, code }),
+  changePassword: (current_password: string, new_password: string) =>
+    api.post<LoginResponse & { message: string }>("/auth/password/change", {
+      current_password,
+      new_password,
+    }),
 };
 
 // ===== Types =====
@@ -233,12 +270,15 @@ export interface TenantSummary {
 
 export interface User {
   id: number;
-  email: string;
+  /** Утсаар бүртгүүлсэн хэрэглэгчид null */
+  email: string | null;
   first_name: string;
   last_name: string;
   role: "super_admin" | "admin" | "teacher" | "parent" | "student";
   school_id: number;
   phone?: string | null;
+  /** Утас SMS кодоор баталгаажсан (зөвхөн тэгвэл утсаар нууц үг сэргээнэ) */
+  phone_verified?: boolean;
   is_active?: boolean;
   school?: TenantSummary | null;
 }
@@ -314,11 +354,14 @@ export interface Student {
   id: number;
   school_id: number;
   user_id: number | null;
+  /** Сурагчийн өөрийн нэвтрэх данс. status: invited = идэвхжүүлээгүй */
   user?: {
     id: number;
     first_name: string;
     last_name: string;
-    email: string;
+    email: string | null;
+    phone?: string | null;
+    status?: string;
   } | null;
   first_name: string | null;
   last_name: string | null;
@@ -2193,4 +2236,89 @@ export const careerApi = {
       `/careers${category ? `?category=${encodeURIComponent(category)}` : ""}`,
     ),
   get: (id: number) => api.get<CareerItem>(`/careers/${id}`),
+};
+
+// ===== Апп-д нэвтрэх эрх (утсаар) — админ =====
+export type AccountStatus = "invited" | "active" | "suspended" | "inactive";
+
+export interface AccessAccount {
+  user_id: number;
+  role: "student" | "parent" | "teacher";
+  first_name: string;
+  last_name: string;
+  phone: string | null;
+  email: string | null;
+  status: AccountStatus;
+  phone_verified: boolean;
+  last_login_at: string | null;
+  link_id?: number;
+  relation_type?: string;
+}
+
+export interface StudentAccess {
+  student_id: number;
+  student_phone: string | null;
+  guardian_name: string | null;
+  guardian_phone: string | null;
+  /** SMS үйлчилгээ тохируулсан эсэх (үгүй бол кодыг админ гараар дамжуулна) */
+  sms_enabled: boolean;
+  student_account: AccessAccount | null;
+  guardians: AccessAccount[];
+}
+
+/** Код илгээсэн үр дүн. `code` нь зөвхөн SMS хүрээгүй үед (админ өөрөө дамжуулна) */
+export interface CodeDelivery {
+  status: "sent" | "not_sent" | "rate_limited" | "not_needed";
+  code?: string;
+  expires_at?: string;
+  retry_after?: number;
+  reason?: string;
+}
+
+export const accessApi = {
+  ofStudent: (studentId: number) => api.get<StudentAccess>(`/access/students/${studentId}`),
+  grant: (
+    studentId: number,
+    body: { target: "student" | "guardian"; phone?: string; name?: string; send_sms?: boolean },
+  ) =>
+    api.post<{ account: AccessAccount; delivery: CodeDelivery }>(
+      `/access/students/${studentId}`,
+      body,
+    ),
+  /** Идэвхжүүлэх кодыг дахин, эсвэл (идэвхжсэн бол) нууц үг сэргээх код */
+  sendCode: (userId: number) =>
+    api.post<{ account: AccessAccount; purpose: PhoneCodePurpose; delivery: CodeDelivery }>(
+      `/access/users/${userId}/code`,
+    ),
+};
+
+// ===== SMS-ийн хэрэглээ (зардлын тоолуур) =====
+export interface SmsUsage {
+  month: string;
+  provider: string;
+  provider_enabled: boolean;
+  notifications_enabled: boolean;
+  /** 0 = хязгааргүй */
+  monthly_limit: number;
+  notification_segments: number;
+  total_segments: number;
+  failed: number;
+  skipped: number;
+  by_purpose: Array<{ purpose: string; sent: number; segments: number; failed: number; skipped: number }>;
+}
+
+export interface SmsLogItem {
+  id: number;
+  to_phone: string;
+  purpose: string;
+  body: string;
+  segments: number;
+  status: "sent" | "failed" | "skipped";
+  error: string | null;
+  created_at: string;
+}
+
+export const smsApi = {
+  usage: (month?: string) => api.get<SmsUsage>(`/sms/usage${month ? `?month=${month}` : ""}`),
+  messages: (limit = 30) => api.get<SmsLogItem[]>(`/sms/messages?limit=${limit}`),
 };

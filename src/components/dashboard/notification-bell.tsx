@@ -14,6 +14,7 @@ import {
   FileText,
   MessageSquare,
   Megaphone,
+  Wallet,
   Info,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -25,6 +26,7 @@ const TYPE_ICON: Record<string, { icon: LucideIcon; cls: string }> = {
   assignment: { icon: FileText, cls: "bg-amber-100 text-amber-600" },
   message: { icon: MessageSquare, cls: "bg-blue-100 text-blue-600" },
   announcement: { icon: Megaphone, cls: "bg-purple-100 text-purple-600" },
+  payment: { icon: Wallet, cls: "bg-amber-100 text-amber-700" },
   system: { icon: Info, cls: "bg-muted text-muted-foreground" },
 };
 
