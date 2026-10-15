@@ -26,6 +26,7 @@ import {
   type FinanceSummary,
 } from "@/lib/api";
 import type { AdminView } from "@/components/dashboard/admin/admin-shell";
+import { OnboardingChecklist } from "@/components/dashboard/admin/onboarding-checklist";
 import { formatMoney } from "@/lib/format";
 import { groupSubtitle, roleLabel } from "@/lib/terms";
 
@@ -135,6 +136,11 @@ export function AdminOverview({ user, onNavigate }: Props) {
         </h1>
         <p className="text-sm text-gray-500 mt-0.5">{dateStr}</p>
       </div>
+
+      {/* Шинэ төв: пилотын амжилтын гинжийн алхмууд (бүгд хийгдэхэд алга болно) */}
+      {user.role === "admin" && (
+        <OnboardingChecklist schoolId={user.school_id} onNavigate={onNavigate} />
+      )}
 
       {/* Санхүүгийн тойм — дарахад "Төлбөр" дэлгэц рүү */}
       {finance && (

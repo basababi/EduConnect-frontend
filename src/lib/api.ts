@@ -231,6 +231,8 @@ export const authApi = {
   revokeSession: (id: number) => api.delete<void>(`/auth/sessions/${id}`),
   logoutAll: () => api.post<void>("/auth/logout-all"),
   requestEmailVerification: () => api.post<void>("/auth/email/verify/request"),
+  confirmEmailVerification: (token: string) =>
+    api.post<{ message: string }>(`/auth/email/verify/${encodeURIComponent(token)}`),
   forgotPassword: (email: string) =>
     api.post<{ message: string; dev_reset_url?: string }>(
       "/auth/password/forgot",
@@ -2321,4 +2323,26 @@ export interface SmsLogItem {
 export const smsApi = {
   usage: (month?: string) => api.get<SmsUsage>(`/sms/usage${month ? `?month=${month}` : ""}`),
   messages: (limit = 30) => api.get<SmsLogItem[]>(`/sms/messages?limit=${limit}`),
+};
+
+// ===== Эхлүүлэх хөтөч (админ) =====
+export type OnboardingStepKey =
+  | "course"
+  | "group"
+  | "schedule"
+  | "students"
+  | "enrollment"
+  | "payment"
+  | "attendance"
+  | "app_access";
+
+export interface OnboardingProgress {
+  steps: Array<{ key: OnboardingStepKey; done: boolean; count: number; optional: boolean }>;
+  completed: number;
+  total: number;
+  ready: boolean;
+}
+
+export const onboardingApi = {
+  progress: () => api.get<OnboardingProgress>("/onboarding"),
 };
